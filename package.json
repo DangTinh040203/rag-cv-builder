@@ -29,6 +29,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.1.12",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.2.5",
     "axios": "^1.13.2",
     "body-parser": "^2.2.2",
     "cache-manager": "^7.2.8",
