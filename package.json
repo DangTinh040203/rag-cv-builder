@@ -14,11 +14,6 @@
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
     "dev:setup": "pnpm run prisma:generate && cd docker && docker compose up -d",
     "docker:build": "docker build -t rag-cv-builder -f docker/Dockerfile .",
     "docker:run": "docker run -p 3000:3000 --env-file .env rag-cv-builder",
@@ -31,7 +26,8 @@
     "prisma:validate": "prisma validate",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "docs": "docsify serve docs -p 4000"
+    "docs": "docsify serve docs -p 4000",
+    "generate:module": "npx ts-node scripts/generate-module.ts"
   },
   "dependencies": {
     "@clerk/backend": "^2.29.3",
