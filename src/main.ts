@@ -1,12 +1,13 @@
 import { type INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import morgan from 'morgan';
+
 import { AppModule } from '@/app/app.module';
 import { Env } from '@/libs/configs';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 class BootstrapApplication {
   app: INestApplication;
@@ -17,13 +18,17 @@ class BootstrapApplication {
 
     this.configService = this.app.get(ConfigService);
     const port = this.configService.getOrThrow<number>(Env.PORT);
+    const apiPrefix = this.configService.get<string>(Env.API_PREFIX, 'api');
+    const apiVersion = this.configService.get<string>(Env.API_VERSION, '1');
+
+    this.app.setGlobalPrefix(`${apiPrefix}/v${apiVersion}`);
 
     this.setupMiddleware();
     this.setupSwagger(this.app);
 
     await this.app.listen(port);
     Logger.log(
-      `Server running on http://localhost:${port}`,
+      `Server running on http://localhost:${port}/${apiPrefix}/v${apiVersion}`,
       BootstrapApplication.name,
     );
   }
