@@ -18,7 +18,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "dev:setup": "cd docker && docker compose up -d",
+    "docker:build": "docker build -t rag-cv-builder -f docker/Dockerfile .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env rag-cv-builder"
   },
   "dependencies": {
     "@clerk/backend": "^2.29.3",
