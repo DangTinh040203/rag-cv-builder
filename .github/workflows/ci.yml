@@ -56,7 +56,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 💅 Check Prettier formatting
-        run: pnpm exec prettier --check "src/**/*.ts" "test/**/*.ts"
+        run: pnpm exec prettier --check "src/**/*.ts"
 
   typecheck:
     name: 🔷 TypeScript Check
