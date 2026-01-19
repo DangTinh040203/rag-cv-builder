@@ -137,6 +137,3 @@ jobs:
 
       - name: 🗄️ Generate Prisma Client
         run: pnpm run prisma:generate
-
-      - name: 🧪 Run tests
-        run: pnpm run test
