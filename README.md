@@ -87,7 +87,45 @@ pnpm run dev:setup
 pnpm run prisma:migrate
 ```
 
-### 6. Start the development server
+### 6. Setup ngrok for Clerk webhooks (Optional)
+
+To receive Clerk webhook events during local development, you need to expose your local server using ngrok:
+
+#### Install ngrok
+
+```bash
+# macOS (Homebrew)
+brew install ngrok
+
+# Linux (Snap)
+sudo snap install ngrok
+
+# Or download directly from https://ngrok.com/download
+```
+
+#### Configure ngrok
+
+```bash
+# Sign up at https://ngrok.com and get your authtoken
+ngrok config add-authtoken <your-authtoken>
+```
+
+#### Start ngrok tunnel
+
+```bash
+# Expose your local server (default port 3000)
+ngrok http 3000
+```
+
+#### Configure Clerk webhook
+
+1. Copy the ngrok forwarding URL (e.g., `https://xxxx-xx-xx-xx-xx.ngrok-free.app`)
+2. Go to [Clerk Dashboard](https://dashboard.clerk.com) → **Webhooks**
+3. Add a new endpoint: `<ngrok-url>/api/v1/users/webhook`
+4. Select the events you want to listen to (e.g., `user.created`, `user.updated`, `user.deleted`)
+5. Copy the **Signing Secret** and add it to your `.env` file as `CLERK_WEBHOOK_SECRET`
+
+### 7. Start the development server
 
 ```bash
 pnpm run start:dev
