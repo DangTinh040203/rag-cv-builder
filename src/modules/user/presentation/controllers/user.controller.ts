@@ -4,6 +4,7 @@ import { Webhook } from 'svix';
 
 import { Env } from '@/libs/configs';
 import { Public } from '@/libs/decorators';
+import { ClerkWebhookService } from '@/modules/user/application/services';
 import { UserService } from '@/modules/user/application/services/user.service';
 import {
   ClerkUserWebhook,
@@ -15,13 +16,13 @@ import { CreateUserDto } from '@/modules/user/presentation/DTOs/create-user.dto'
 export class UserController {
   constructor(
     private readonly logger: Logger,
-    private readonly userService: UserService,
     private readonly configService: ConfigService,
+    private readonly clerkWebhookService: ClerkWebhookService,
   ) {}
 
   @Public()
   @Post('clerk')
-  handleClerkWebhook(@Req() req) {
+  async handleClerkWebhook(@Req() req) {
     const svixHeaders = {
       'svix-id': req.headers['svix-id'],
       'svix-timestamp': req.headers['svix-timestamp'],
@@ -37,25 +38,6 @@ export class UserController {
     const payload = JSON.stringify(req.body);
     const evt = wh.verify(payload, svixHeaders) as ClerkWebhook;
 
-    switch (evt.type) {
-      case ClerkUserWebhook.USER_CREATED: {
-        const clerkPayloadData = evt.data;
-        const payload: CreateUserDto = {
-          avatar: clerkPayloadData.image_url,
-          provider: 'CLERK',
-          email: clerkPayloadData.email_addresses[0].email_address,
-          providerId: clerkPayloadData.id,
-          firstName: clerkPayloadData.first_name,
-          lastName: clerkPayloadData.last_name,
-        };
-
-        this.logger.log(payload, UserController.name);
-
-        break;
-      }
-
-      default:
-        break;
-    }
+    await this.clerkWebhookService.processWebhook(evt);
   }
 }
