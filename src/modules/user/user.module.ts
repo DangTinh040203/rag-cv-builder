@@ -1,13 +1,11 @@
 import { Logger, Module } from '@nestjs/common';
 
-import { CLERK_STRATEGY } from '@/modules/user/application/interfaces';
+import { USER_REPOSITORY_TOKEN } from '@/modules/user/application/interfaces';
 import { ClerkWebhookService } from '@/modules/user/application/services';
 import { UserService } from '@/modules/user/application/services/user.service';
-import {
-  UserCreatedStrategy,
-  UserUpdatedStrategy,
-} from '@/modules/user/application/strategies';
-import { UserController } from '@/modules/user/presentation/controllers/user.controller';
+import { UserStrategyModule } from '@/modules/user/application/strategies/user-strategy.module';
+import { PrismaAdapterUserRepository } from '@/modules/user/infrastructure/repositories';
+import { UserController } from '@/modules/user/presentation/controllers';
 
 @Module({
   imports: [],
@@ -16,19 +14,11 @@ import { UserController } from '@/modules/user/presentation/controllers/user.con
     ClerkWebhookService,
     UserService,
     Logger,
+    UserStrategyModule,
 
-    // Strategies
-    UserCreatedStrategy,
-    UserUpdatedStrategy,
     {
-      provide: CLERK_STRATEGY,
-      useFactory: (
-        userCreatedStrategy: UserCreatedStrategy,
-        userUpdatedStrategy: UserUpdatedStrategy,
-      ) => {
-        return [userCreatedStrategy, userUpdatedStrategy];
-      },
-      inject: [UserCreatedStrategy, UserUpdatedStrategy],
+      provide: USER_REPOSITORY_TOKEN,
+      useClass: PrismaAdapterUserRepository,
     },
   ],
 })

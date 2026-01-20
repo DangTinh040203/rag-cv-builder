@@ -5,12 +5,7 @@ import { Webhook } from 'svix';
 import { Env } from '@/libs/configs';
 import { Public } from '@/libs/decorators';
 import { ClerkWebhookService } from '@/modules/user/application/services';
-import { UserService } from '@/modules/user/application/services/user.service';
-import {
-  ClerkUserWebhook,
-  ClerkWebhook,
-} from '@/modules/user/domain/clerk-webhook.domain';
-import { CreateUserDto } from '@/modules/user/presentation/DTOs/create-user.dto';
+import { ClerkWebhook } from '@/modules/user/domain';
 
 @Controller('users')
 export class UserController {

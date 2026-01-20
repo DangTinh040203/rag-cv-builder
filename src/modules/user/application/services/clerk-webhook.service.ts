@@ -4,10 +4,7 @@ import {
   CLERK_STRATEGY,
   IClerkWebhookStrategy,
 } from '@/modules/user/application/interfaces';
-import {
-  ClerkUserWebhook,
-  ClerkWebhook,
-} from '@/modules/user/domain/clerk-webhook.domain';
+import { ClerkUserWebhook, ClerkWebhook } from '@/modules/user/domain';
 
 @Injectable()
 export class ClerkWebhookService implements OnModuleInit {

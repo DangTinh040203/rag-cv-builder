@@ -81,7 +81,7 @@ import type { UserEntity } from '@/modules/user/domain/entities/user.entity';
 import { Module } from '@nestjs/common';
 
 import { UserService } from '@/modules/user/application/use-cases/user.service';
-import { USER_REPOSITORY_TOKEN } from '@/modules/user/domain/ports/user.repository';
+import { USER_REPOSITORY_TOKEN } from '@/modules/user/domain';
 import { PrismaUserRepository } from '@/modules/user/infrastructure/adapters/prisma-user.repository';
 import { UserController } from '@/modules/user/presentation/controllers/user.controller';
 
@@ -158,7 +158,7 @@ import { ConfigService } from '@nestjs/config';
 // App-specific imports with @/ alias
 import { AuthGuard } from '@/libs/guards/auth.guard';
 import { UserService } from '@/modules/user/application/use-cases/user.service';
-import { type IUserRepository } from '@/modules/user/domain/ports/user.repository';
+import { type IUserRepository } from '@/modules/user/domain';
 ```
 
 ## Error Handling

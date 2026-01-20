@@ -1,7 +1,7 @@
 import {
   type ClerkUserWebhook,
   type ClerkWebhook,
-} from '@/modules/user/domain/clerk-webhook.domain';
+} from '@/modules/user/domain';
 
 export const CLERK_STRATEGY = 'CLERK_STRATEGY';
 

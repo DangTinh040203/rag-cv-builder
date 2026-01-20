@@ -2,10 +2,11 @@ export interface User {
   id: string;
   providerId: string;
   provider: string;
-  firstName?: string;
-  lastName?: string;
   email: string;
-  avatar?: string;
+
+  firstName: string | null;
+  lastName: string | null;
+  avatar: string | null;
 
   createdAt: Date;
   updatedAt: Date;
