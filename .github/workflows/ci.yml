@@ -31,7 +31,10 @@ jobs:
       - name: 📦 Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: 🔍 Run ESLint
+      - name: � Generate Prisma Client
+        run: pnpm run prisma:generate
+
+      - name: �🔍 Run ESLint
         run: pnpm run lint
 
   format:

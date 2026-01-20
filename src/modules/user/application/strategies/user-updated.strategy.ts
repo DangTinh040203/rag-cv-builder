@@ -9,7 +9,7 @@ export class UserUpdatedStrategy implements IClerkWebhookStrategy {
     return ClerkUserWebhook.USER_UPDATED;
   }
 
-  async handle(evt: ClerkWebhook): Promise<void> {
+  async handle(_evt: ClerkWebhook): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
 }
