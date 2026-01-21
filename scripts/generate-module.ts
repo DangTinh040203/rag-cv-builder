@@ -65,6 +65,7 @@ if (fs.existsSync(modulePath)) {
 const folders = [
   'application/interfaces',
   'application/services',
+  'application/strategies',
   'domain',
   'infrastructure/repositories',
   'presentation/controllers',
@@ -138,6 +139,20 @@ export class ${ModuleName}Service {}
   [`application/services/index.ts`]: `export * from '@/modules/${moduleName}/application/services/${moduleName}.service';
 `,
 
+  // ==================== APPLICATION - STRATEGIES ====================
+  [`application/strategies/${moduleName}-created.strategy.ts`]: `import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class ${ModuleName}CreatedStrategy {
+  async handle(): Promise<void> {
+    // TODO: Implement strategy logic
+  }
+}
+`,
+
+  [`application/strategies/index.ts`]: `export * from '@/modules/${moduleName}/application/strategies/${moduleName}-created.strategy';
+`,
+
   // ==================== INFRASTRUCTURE - REPOSITORY ====================
   [`infrastructure/repositories/prisma-${moduleName}.repo.ts`]: `import { type PrismaService } from '@/libs/databases/prisma.service';
 import { type I${ModuleName}Repository } from '@/modules/${moduleName}/application/interfaces';
@@ -191,6 +206,15 @@ export class Create${ModuleName}Dto {
 }
 `,
 
+  [`presentation/DTOs/get-${moduleName}.dto.ts`]: `import { IsNotEmpty, IsString } from 'class-validator';
+
+export class Get${ModuleName}Dto {
+  @IsString()
+  @IsNotEmpty()
+  id: string;
+}
+`,
+
   [`presentation/DTOs/update-${moduleName}.dto.ts`]: `import { IsOptional, IsString } from 'class-validator';
 
 export class Update${ModuleName}Dto {
@@ -201,6 +225,7 @@ export class Update${ModuleName}Dto {
 `,
 
   [`presentation/DTOs/index.ts`]: `export * from '@/modules/${moduleName}/presentation/DTOs/create-${moduleName}.dto';
+export * from '@/modules/${moduleName}/presentation/DTOs/get-${moduleName}.dto';
 export * from '@/modules/${moduleName}/presentation/DTOs/update-${moduleName}.dto';
 `,
 };
