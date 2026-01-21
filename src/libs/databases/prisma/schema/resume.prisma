@@ -1,0 +1,76 @@
+model Resume {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  title    String
+  subTitle String
+  overview String
+  avatar   String?
+
+  information     ResumeInformation[]
+  educations      Education[]
+  workExperiences WorkExperience[]
+  projects        Project[]
+  skills          Skill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ResumeInformation {
+  id    String @id @default(uuid())
+  label String
+  value String
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@map("Information")
+}
+
+model Skill {
+  id    String @id @default(uuid())
+  label String
+  value String
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id     String @id @default(uuid())
+  school String
+  degree String
+  major  String
+
+  startDate DateTime
+  endDate   DateTime? // Null = "Present"
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model WorkExperience {
+  id          String @id @default(uuid())
+  company     String
+  position    String
+  description String
+
+  startDate DateTime
+  endDate   DateTime? // Null = "Present"
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id       String @id @default(uuid())
+  title    String
+  subTitle String
+  details  String
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
