@@ -8,6 +8,7 @@ import morgan from 'morgan';
 
 import { AppModule } from '@/app/app.module';
 import { Env } from '@/libs/configs';
+import { GlobalExceptionFilter } from '@/libs/filters';
 
 class BootstrapApplication {
   app: INestApplication;
@@ -44,6 +45,9 @@ class BootstrapApplication {
         },
       }),
     );
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
+    this.app.useGlobalFilters(new GlobalExceptionFilter());
 
     this.app.enableCors({
       origin: this.configService.getOrThrow<string>(Env.FRONTEND_ORIGIN),
