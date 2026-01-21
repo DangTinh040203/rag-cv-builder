@@ -9,6 +9,6 @@ import { type Request } from 'express';
 export const CurrentUser: ParameterDecorator = createParamDecorator(
   (data: unknown, ctx: ExecutionContext): JwtPayload => {
     const request: Request = ctx.switchToHttp().getRequest();
-    return request.auth;
+    return request.auth as JwtPayload;
   },
 );

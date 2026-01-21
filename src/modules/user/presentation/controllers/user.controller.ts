@@ -24,14 +24,14 @@ export class UserController {
       'svix-signature': req.headers['svix-signature'],
     };
 
-    this.logger.log('Svix headers:', svixHeaders);
-
     const wh = new Webhook(
       this.configService.getOrThrow(Env.CLERK_WEBHOOK_SECRET),
     );
 
     const payload = JSON.stringify(req.body);
     const evt = wh.verify(payload, svixHeaders) as ClerkWebhook;
+
+    this.logger.log('Clerk webhook received:', evt.data);
 
     await this.clerkWebhookService.processWebhook(evt);
   }
