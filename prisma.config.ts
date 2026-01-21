@@ -6,7 +6,7 @@ config({ path: './.env' });
 export default defineConfig({
   schema: 'src/libs/databases/prisma/schema',
   migrations: {
-    path: 'src/libs/databases/prisma/schema/migrations',
+    path: 'src/libs/databases/prisma/migrations',
   },
   datasource: {
     url: process.env['DATABASE_URL'],

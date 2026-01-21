@@ -31,7 +31,10 @@ export class UserController {
     const payload = JSON.stringify(req.body);
     const evt = wh.verify(payload, svixHeaders) as ClerkWebhook;
 
-    this.logger.log('Clerk webhook received:', evt.data);
+    this.logger.log(
+      'Clerk webhook received:',
+      evt.data.primary_email_address_id,
+    );
 
     await this.clerkWebhookService.processWebhook(evt);
   }

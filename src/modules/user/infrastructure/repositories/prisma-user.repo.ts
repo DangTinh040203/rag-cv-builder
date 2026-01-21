@@ -1,4 +1,6 @@
-import { type PrismaService } from '@/libs/databases/prisma.service';
+import { Injectable } from '@nestjs/common';
+
+import { PrismaService } from '@/libs/databases/prisma.service';
 import { type IUserRepository } from '@/modules/user/application/interfaces';
 import { type User } from '@/modules/user/domain';
 import {
@@ -6,6 +8,7 @@ import {
   type UpdateUserDto,
 } from '@/modules/user/presentation/DTOs';
 
+@Injectable()
 export class PrismaAdapterUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
