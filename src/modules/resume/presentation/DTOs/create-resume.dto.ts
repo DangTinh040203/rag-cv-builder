@@ -120,7 +120,7 @@ export class CreateResumeDto {
 
   @IsString()
   @IsOptional()
-  avatar: string;
+  avatar: string | null;
 
   @IsArray()
   @ValidateNested({ each: true })

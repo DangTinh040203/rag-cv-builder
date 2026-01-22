@@ -46,7 +46,6 @@ class BootstrapApplication {
       }),
     );
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-argument
     this.app.useGlobalFilters(new GlobalExceptionFilter());
 
     this.app.enableCors({

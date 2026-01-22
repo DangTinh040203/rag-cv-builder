@@ -1,5 +1,6 @@
 import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 
+import { ResumeService } from '@/modules/resume/application/services';
 import {
   type IClerkWebhookStrategy,
   type IUserRepository,
@@ -14,6 +15,7 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
   constructor(
     @Inject(USER_REPOSITORY_TOKEN)
     private readonly userRepository: IUserRepository,
+    private readonly resumeService: ResumeService,
   ) {}
 
   getType(): ClerkUserWebhook {
@@ -42,13 +44,26 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       );
     }
 
-    await this.userRepository.create({
+    const newUser = await this.userRepository.create({
       email: primaryEmail.email_address,
       firstName: data.first_name,
       lastName: data.last_name,
       avatar: data.image_url,
       provider: 'clerk',
       providerId: data.id,
+    });
+
+    const title = newUser.email.split('@')[0] || 'Full Name';
+    await this.resumeService.create(newUser.id, {
+      title,
+      subTitle: 'Your Position',
+      overview: 'Your Overview',
+      avatar: data.image_url,
+      information: [],
+      educations: [],
+      workExperiences: [],
+      projects: [],
+      skills: [],
     });
 
     this.logger.log(

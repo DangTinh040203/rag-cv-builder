@@ -1,4 +1,4 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import {
   CLERK_STRATEGY,
@@ -14,6 +14,7 @@ export class ClerkWebhookService implements OnModuleInit {
   constructor(
     @Inject(CLERK_STRATEGY)
     private readonly strategies: IClerkWebhookStrategy[],
+    private readonly logger: Logger,
   ) {}
 
   onModuleInit() {
@@ -25,10 +26,13 @@ export class ClerkWebhookService implements OnModuleInit {
   async processWebhook(evt: ClerkWebhook) {
     const strategy = this.strategiesMap.get(evt.type);
 
-    if (!strategy) {
-      throw new Error(`No strategy found for event: ${evt.type}`);
+    if (strategy) {
+      await strategy.handle(evt);
+    } else {
+      this.logger.warn(
+        `No strategy found for event type: ${evt.type}`,
+        ClerkWebhookService.name,
+      );
     }
-
-    await strategy.handle(evt);
   }
 }
