@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 import {
   type IResumeRepository,
@@ -21,7 +21,21 @@ export class ResumeService {
     return this.resumeRepository.create(userId, payload);
   }
 
-  update(id: string, payload: UpdateResumeDto): Promise<Resume> {
+  async update(id: string, payload: UpdateResumeDto): Promise<Resume> {
+    const exist = await this.resumeRepository.findById(id);
+    if (!exist) {
+      throw new NotFoundException(`Resume with id ${id} not found`);
+    }
+
     return this.resumeRepository.update(id, payload);
+  }
+
+  async findById(id: string): Promise<Resume> {
+    const exist = await this.resumeRepository.findById(id);
+    if (!exist) {
+      throw new NotFoundException(`Resume with id ${id} not found`);
+    }
+
+    return exist;
   }
 }

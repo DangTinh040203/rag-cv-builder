@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 
 import { ResumeService } from '@/modules/resume/application/services';
 import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
@@ -6,6 +6,11 @@ import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
 @Controller('resume')
 export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
+
+  @Get('/:id')
+  async findById(@Param('id') id: string) {
+    return this.resumeService.findById(id);
+  }
 
   @Post('/:id')
   async update(@Param('id') id: string, @Body() payload: UpdateResumeDto) {
