@@ -58,3 +58,4 @@ data
 
 /prisma/src/libs/databases/prisma
 generated
+.agent
