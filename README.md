@@ -84,7 +84,7 @@ pnpm run dev:setup
 ### 5. Run database migrations
 
 ```bash
-pnpm run prisma:migrate
+pnpm run db:migrate
 ```
 
 ### 6. Setup ngrok for Clerk webhooks (Optional)
@@ -174,14 +174,14 @@ prisma/               # Prisma schema and migrations
 
 ### Database (Prisma)
 
-| Script                       | Description                     |
-| ---------------------------- | ------------------------------- |
-| `pnpm prisma:generate`       | Generate Prisma client          |
-| `pnpm prisma:migrate`        | Run database migrations         |
-| `pnpm prisma:migrate:deploy` | Deploy migrations to production |
-| `pnpm prisma:studio`         | Open Prisma Studio              |
-| `pnpm prisma:db:push`        | Push schema changes             |
-| `pnpm prisma:seed`           | Seed the database               |
+| Script                   | Description                     |
+| ------------------------ | ------------------------------- |
+| `pnpm db:generate`       | Generate Prisma client          |
+| `pnpm db:migrate`        | Run database migrations         |
+| `pnpm db:migrate:deploy` | Deploy migrations to production |
+| `pnpm db:studio`         | Open Prisma Studio              |
+| `pnpm db:db:push`        | Push schema changes             |
+| `pnpm db:seed`           | Seed the database               |
 
 ### Documentation
 

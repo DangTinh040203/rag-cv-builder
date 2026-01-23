@@ -52,7 +52,7 @@ This command will:
 Apply database migrations:
 
 ```bash
-pnpm run prisma:migrate
+pnpm run db:migrate
 ```
 
 ### 6. Start Development Server
@@ -73,15 +73,15 @@ curl http://localhost:3000/api/v1/health
 
 ## Common Commands
 
-| Command                   | Description              |
-| ------------------------- | ------------------------ |
-| `pnpm run start:dev`      | Start development server |
-| `pnpm run build`          | Build for production     |
-| `pnpm run start:prod`     | Start production server  |
-| `pnpm run lint`           | Run ESLint               |
-| `pnpm run test`           | Run tests                |
-| `pnpm run prisma:studio`  | Open Prisma Studio       |
-| `pnpm run prisma:migrate` | Run database migrations  |
+| Command               | Description              |
+| --------------------- | ------------------------ |
+| `pnpm run start:dev`  | Start development server |
+| `pnpm run build`      | Build for production     |
+| `pnpm run start:prod` | Start production server  |
+| `pnpm run lint`       | Run ESLint               |
+| `pnpm run test`       | Run tests                |
+| `pnpm run db:studio`  | Open Prisma Studio       |
+| `pnpm run db:migrate` | Run database migrations  |
 
 ## Next Steps
 

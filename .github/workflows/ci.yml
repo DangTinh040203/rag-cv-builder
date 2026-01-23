@@ -32,7 +32,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: � Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: pnpm run db:generate
 
       - name: �🔍 Run ESLint
         run: pnpm run lint
@@ -83,7 +83,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🗄️ Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: pnpm run db:generate
 
       - name: 🔷 Run TypeScript check
         run: pnpm exec tsc --noEmit
@@ -111,7 +111,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🗄️ Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: pnpm run db:generate
 
       - name: 🏗️ Build project
         run: pnpm run build
@@ -139,4 +139,4 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 🗄️ Generate Prisma Client
-        run: pnpm run prisma:generate
+        run: pnpm run db:generate
