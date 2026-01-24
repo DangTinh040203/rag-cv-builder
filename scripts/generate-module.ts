@@ -163,7 +163,7 @@ import {
 } from '@/modules/${moduleName}/presentation/DTOs';
 
 export class PrismaAdapter${ModuleName}Repository implements I${ModuleName}Repository {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(payload: Create${ModuleName}Dto): Promise<${ModuleName}> {
     return this.prisma.${moduleNameCamel}.create({ data: payload });

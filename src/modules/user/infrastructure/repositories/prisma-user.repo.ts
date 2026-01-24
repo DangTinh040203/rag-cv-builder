@@ -10,7 +10,7 @@ import {
 
 @Injectable()
 export class PrismaAdapterUserRepository implements IUserRepository {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(payload: CreateUserDto): Promise<User> {
     return await this.prisma.user.create({ data: payload });

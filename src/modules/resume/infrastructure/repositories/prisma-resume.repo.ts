@@ -19,7 +19,7 @@ const resumeInclude = {
 
 @Injectable()
 export class PrismaAdapterResumeRepository implements IResumeRepository {
-  constructor(private readonly db: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, payload: CreateResumeDto): Promise<Resume> {
     return this.prisma.resume.create({
