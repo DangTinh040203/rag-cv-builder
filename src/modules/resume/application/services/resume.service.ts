@@ -38,4 +38,8 @@ export class ResumeService {
 
     return exist;
   }
+
+  async findAll(): Promise<Resume[]> {
+    return this.resumeRepository.findAll();
+  }
 }

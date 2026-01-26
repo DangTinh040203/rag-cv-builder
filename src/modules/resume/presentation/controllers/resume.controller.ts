@@ -7,6 +7,11 @@ import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
 export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
 
+  @Get()
+  async findAll() {
+    return this.resumeService.findAll();
+  }
+
   @Get('/:id')
   async findById(@Param('id') id: string) {
     return this.resumeService.findById(id);
