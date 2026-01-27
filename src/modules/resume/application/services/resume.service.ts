@@ -22,14 +22,6 @@ export class ResumeService {
     private readonly resumeRepository: IResumeRepository,
   ) {}
 
-  async create(userId: string, payload: CreateResumeDto): Promise<Resume> {
-    const resumes = await this.resumeRepository.findAll(userId);
-    if (resumes.length > 0) {
-      throw new ForbiddenException('User already has a resume');
-    }
-    return this.resumeRepository.create(userId, payload);
-  }
-
   async update(
     id: string,
     payload: UpdateResumeDto,
@@ -62,10 +54,6 @@ export class ResumeService {
     }
 
     return resumeExist;
-  }
-
-  async findAll(userId: string): Promise<Resume[]> {
-    return this.resumeRepository.findAll(userId);
   }
 
   async delete(id: string, userId: string): Promise<void> {

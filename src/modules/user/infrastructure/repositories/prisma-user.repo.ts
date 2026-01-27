@@ -12,15 +12,8 @@ import {
 export class PrismaAdapterUserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(payload: CreateUserDto, resumePayload: any): Promise<User> {
-    return await this.prisma.user.create({
-      data: {
-        ...payload,
-        resume: {
-          create: resumePayload,
-        },
-      },
-    });
+  async create(payload: CreateUserDto): Promise<User> {
+    return await this.prisma.user.create({ data: payload });
   }
 
   async findById(id: string): Promise<User | null> {
