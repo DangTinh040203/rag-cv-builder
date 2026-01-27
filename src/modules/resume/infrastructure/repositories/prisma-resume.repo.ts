@@ -21,8 +21,9 @@ const resumeInclude = {
 export class PrismaAdapterResumeRepository implements IResumeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(): Promise<Resume[]> {
+  async findAll(userId: string): Promise<Resume[]> {
     return this.prisma.resume.findMany({
+      where: { userId },
       include: resumeInclude,
     });
   }
