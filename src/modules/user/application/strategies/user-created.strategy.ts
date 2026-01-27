@@ -1,6 +1,9 @@
 import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 
-import { ResumeService } from '@/modules/resume/application/services';
+import {
+  type IResumeRepository,
+  RESUME_REPOSITORY_TOKEN,
+} from '@/modules/resume/application/interfaces';
 import {
   type IClerkWebhookStrategy,
   type IUserRepository,
@@ -15,7 +18,9 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
   constructor(
     @Inject(USER_REPOSITORY_TOKEN)
     private readonly userRepository: IUserRepository,
-    private readonly resumeService: ResumeService,
+
+    @Inject(RESUME_REPOSITORY_TOKEN)
+    private readonly resumeRepository: IResumeRepository,
   ) {}
 
   getType(): ClerkUserWebhook {
@@ -53,11 +58,11 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       providerId: data.id,
     });
 
-    const title = newUser.email.split('@')[0] || 'Full Name';
-    await this.resumeService.create(newUser.id, {
-      title,
-      subTitle: 'Your Position',
-      overview: 'Your Overview',
+    await this.resumeRepository.create(newUser.id, {
+      title: 'Full Name',
+      subTitle: 'Fullstack Developer',
+      overview:
+        'Passionate software engineer with 5+ years of experience in building scalable web applications. Expert in React, Node.js, and cloud technologies. Proven track record of delivering high-quality code and leading development teams.',
       avatar: data.image_url,
       information: [],
       educations: [],

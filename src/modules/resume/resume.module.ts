@@ -20,6 +20,6 @@ import { UserModule } from '@/modules/user/user.module';
     },
   ],
   controllers: [ResumeController],
-  exports: [ResumeService],
+  exports: [ResumeService, RESUME_REPOSITORY_TOKEN],
 })
 export class ResumeModule {}

@@ -9,7 +9,7 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  resumes Resume[]
+  resume Resume?
 
   @@map("users")
 }

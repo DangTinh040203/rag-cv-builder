@@ -22,10 +22,6 @@ export class ResumeService {
     private readonly resumeRepository: IResumeRepository,
   ) {}
 
-  async create(userId: string, payload: CreateResumeDto): Promise<Resume> {
-    return this.resumeRepository.create(userId, payload);
-  }
-
   async update(
     id: string,
     payload: UpdateResumeDto,
@@ -58,10 +54,6 @@ export class ResumeService {
     }
 
     return resumeExist;
-  }
-
-  async findAll(userId: string): Promise<Resume[]> {
-    return this.resumeRepository.findAll(userId);
   }
 
   async delete(id: string, userId: string): Promise<void> {
