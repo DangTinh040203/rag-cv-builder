@@ -24,6 +24,10 @@ export class PrismaAdapterUserRepository implements IUserRepository {
     return await this.prisma.user.findUnique({ where: { email } });
   }
 
+  async findByProviderId(providerId: string): Promise<User | null> {
+    return await this.prisma.user.findFirst({ where: { providerId } });
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.user.delete({ where: { id } });
   }

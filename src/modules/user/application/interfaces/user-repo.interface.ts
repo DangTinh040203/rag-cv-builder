@@ -10,6 +10,7 @@ export interface IUserRepository {
   create(payload: CreateUserDto): Promise<User>;
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  findByProviderId(providerId: string): Promise<User | null>;
   delete(id: string): Promise<void>;
   update(id: string, payload: UpdateUserDto): Promise<User>;
 }

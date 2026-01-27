@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { forwardRef, Logger, Module } from '@nestjs/common';
 
 import { PrismaService } from '@/libs/databases/prisma.service';
 import { ResumeModule } from '@/modules/resume/resume.module';
@@ -16,7 +16,7 @@ import { PrismaAdapterUserRepository } from '@/modules/user/infrastructure/repos
 import { UserController } from '@/modules/user/presentation/controllers';
 
 @Module({
-  imports: [ResumeModule],
+  imports: [forwardRef(() => ResumeModule)],
   controllers: [UserController],
   providers: [
     PrismaService,
