@@ -9,6 +9,7 @@ export const RESUME_REPOSITORY_TOKEN = 'RESUME_REPOSITORY_TOKEN';
 export interface IResumeRepository {
   create(userId: string, payload: CreateResumeDto): Promise<Resume>;
   findById(id: string): Promise<Resume | null>;
+  findByUserId(userId: string): Promise<Resume | null>;
   update(id: string, payload: UpdateResumeDto): Promise<Resume>;
   delete(id: string): Promise<void>;
 }

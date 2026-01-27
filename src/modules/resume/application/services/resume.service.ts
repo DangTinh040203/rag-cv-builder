@@ -10,10 +10,7 @@ import {
   RESUME_REPOSITORY_TOKEN,
 } from '@/modules/resume/application/interfaces';
 import { Resume } from '@/modules/resume/domain';
-import {
-  CreateResumeDto,
-  UpdateResumeDto,
-} from '@/modules/resume/presentation/DTOs';
+import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
 
 @Injectable()
 export class ResumeService {
@@ -54,6 +51,10 @@ export class ResumeService {
     }
 
     return resumeExist;
+  }
+
+  async findByUserId(userId: string): Promise<Resume | null> {
+    return this.resumeRepository.findByUserId(userId);
   }
 
   async delete(id: string, userId: string): Promise<void> {
