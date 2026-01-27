@@ -1,41 +1,32 @@
-import { Controller, Logger, Post, Req } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Webhook } from 'svix';
+import {
+  Controller,
+  InternalServerErrorException,
+  Logger,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { type Request } from 'express';
 
-import { Env } from '@/libs/configs';
 import { Public } from '@/libs/decorators';
 import { ClerkWebhookService } from '@/modules/user/application/services';
-import { ClerkWebhook } from '@/modules/user/domain';
+import { ClerkWebhookGuard } from '@/modules/user/presentation/guards/clerk-webhook.guard';
 
 @Controller('users')
 export class UserController {
   constructor(
     private readonly logger: Logger,
-    private readonly configService: ConfigService,
     private readonly clerkWebhookService: ClerkWebhookService,
   ) {}
 
   @Public()
+  @UseGuards(ClerkWebhookGuard)
   @Post('clerk')
-  async handleClerkWebhook(@Req() req) {
-    const svixHeaders = {
-      'svix-id': req.headers['svix-id'],
-      'svix-timestamp': req.headers['svix-timestamp'],
-      'svix-signature': req.headers['svix-signature'],
-    };
-
-    const wh = new Webhook(
-      this.configService.getOrThrow(Env.CLERK_WEBHOOK_SECRET),
-    );
-
-    const payload = JSON.stringify(req.body);
-    const evt = wh.verify(payload, svixHeaders) as ClerkWebhook;
-
+  async handleClerkWebhook(@Req() req: Request) {
     this.logger.log(
       'Clerk webhook received:',
-      evt.data.primary_email_address_id,
+      req.clerkEvent?.data.backup_code_enabled,
     );
-
-    await this.clerkWebhookService.processWebhook(evt);
+    await this.clerkWebhookService.processWebhook(req.clerkEvent);
   }
 }

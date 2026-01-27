@@ -1,4 +1,10 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 
 import {
   CLERK_STRATEGY,
@@ -23,7 +29,11 @@ export class ClerkWebhookService implements OnModuleInit {
     });
   }
 
-  async processWebhook(evt: ClerkWebhook) {
+  async processWebhook(evt: ClerkWebhook | null) {
+    if (!evt) {
+      throw new InternalServerErrorException(`Can't process webhook`);
+    }
+
     const strategy = this.strategiesMap.get(evt.type);
 
     if (strategy) {
