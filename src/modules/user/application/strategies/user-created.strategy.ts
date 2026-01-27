@@ -44,27 +44,30 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       );
     }
 
-    const newUser = await this.userRepository.create({
-      email: primaryEmail.email_address,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      avatar: data.image_url,
-      provider: 'clerk',
-      providerId: data.id,
-    });
-
-    const title = newUser.email.split('@')[0] || 'Full Name';
-    await this.resumeService.create(newUser.id, {
+    const title = primaryEmail.email_address.split('@')[0] || 'Full Name';
+    const resumeData = {
       title,
       subTitle: 'Your Position',
       overview: 'Your Overview',
       avatar: data.image_url,
-      information: [],
-      educations: [],
-      workExperiences: [],
-      projects: [],
-      skills: [],
-    });
+      information: { create: [] },
+      educations: { create: [] },
+      workExperiences: { create: [] },
+      projects: { create: [] },
+      skills: { create: [] },
+    };
+
+    const newUser = await this.userRepository.create(
+      {
+        email: primaryEmail.email_address,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        avatar: data.image_url,
+        provider: 'clerk',
+        providerId: data.id,
+      },
+      resumeData,
+    );
 
     this.logger.log(
       `User created successfully with email: ${primaryEmail.email_address}`,

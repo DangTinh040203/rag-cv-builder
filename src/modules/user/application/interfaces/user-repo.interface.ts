@@ -7,7 +7,7 @@ import {
 export const USER_REPOSITORY_TOKEN = 'USER_REPOSITORY_TOKEN';
 
 export interface IUserRepository {
-  create(payload: CreateUserDto): Promise<User>;
+  create(payload: CreateUserDto, resumePayload: any): Promise<User>;
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   findByProviderId(providerId: string): Promise<User | null>;

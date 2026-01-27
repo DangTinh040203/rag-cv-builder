@@ -23,6 +23,10 @@ export class ResumeService {
   ) {}
 
   async create(userId: string, payload: CreateResumeDto): Promise<Resume> {
+    const resumes = await this.resumeRepository.findAll(userId);
+    if (resumes.length > 0) {
+      throw new ForbiddenException('User already has a resume');
+    }
     return this.resumeRepository.create(userId, payload);
   }
 
