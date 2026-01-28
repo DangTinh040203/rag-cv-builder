@@ -5,6 +5,7 @@ import {
   type IUserRepository,
   USER_REPOSITORY_TOKEN,
 } from '@/modules/user/application/interfaces';
+import { UserService } from '@/modules/user/application/services/user.service';
 import { ClerkUserWebhook, ClerkWebhook } from '@/modules/user/domain';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class UserDeletedStrategy implements IClerkWebhookStrategy {
   constructor(
     @Inject(USER_REPOSITORY_TOKEN)
     private readonly userRepository: IUserRepository,
+    private readonly userService: UserService,
   ) {}
 
   getType(): ClerkUserWebhook {
@@ -39,6 +41,8 @@ export class UserDeletedStrategy implements IClerkWebhookStrategy {
     }
 
     await this.userRepository.delete(user.id);
+
+    await this.userService.invalidateUserCache(data.id);
 
     const duration = Date.now() - start;
     this.logger.log(

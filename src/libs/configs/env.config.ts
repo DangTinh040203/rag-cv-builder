@@ -12,6 +12,8 @@ export enum Env {
   CLERK_SECRET_KEY = 'CLERK_SECRET_KEY',
 
   DATABASE_URL = 'DATABASE_URL',
+  REDIS_URL = 'REDIS_URL',
+  REDIS_NAMESPACE = 'REDIS_NAMESPACE',
 }
 
 export const validationSchema = Joi.object({
@@ -23,4 +25,6 @@ export const validationSchema = Joi.object({
   [Env.CLERK_PUBLISHABLE_KEY]: Joi.string().required(),
   [Env.CLERK_SECRET_KEY]: Joi.string().required(),
   [Env.DATABASE_URL]: Joi.string().required(),
+  [Env.REDIS_URL]: Joi.string().required(),
+  [Env.REDIS_NAMESPACE]: Joi.string().default('cv-builder'),
 });

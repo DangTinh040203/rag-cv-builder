@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
+import { CacheModule } from '@/libs/cache';
 import { AppConfigModule } from '@/libs/configs/config.module';
 import { DatabaseModule } from '@/libs/databases/database.module';
 import { ClerkAuthGuard } from '@/libs/guards';
@@ -8,7 +9,13 @@ import { ResumeModule } from '@/modules/resume/resume.module';
 import { UserModule } from '@/modules/user/user.module';
 
 @Module({
-  imports: [UserModule, ResumeModule, DatabaseModule, AppConfigModule],
+  imports: [
+    UserModule,
+    ResumeModule,
+    DatabaseModule,
+    AppConfigModule,
+    CacheModule,
+  ],
   controllers: [],
   providers: [
     {
