@@ -22,17 +22,11 @@ export class UserService {
 
     const cachedUser = await this.cacheService.get<User | null>(cacheKey);
 
-    if (cachedUser !== undefined) {
-      if (cachedUser === null) {
-        this.logger.debug(`Cache HIT (null) for user: ${providerId}`);
-        return null;
-      }
-      this.logger.debug(`Cache HIT for user: ${providerId}`);
+    if (cachedUser) {
       return cachedUser;
     }
 
     this.logger.debug(`Cache MISS for user: ${providerId}`);
-
     const user = await this.userRepository.findByProviderId(providerId);
 
     if (user) {
