@@ -9,10 +9,8 @@ import { Keyv } from 'keyv';
 
 import { Env } from '@/libs/configs/env.config';
 
-// Default TTL in milliseconds (5 minutes)
 export const DEFAULT_CACHE_TTL = 5 * 60 * 1000;
 
-// Define a minimal interface for the cache to avoid import type issues
 interface CacheStore {
   get<T>(key: string): Promise<T | undefined>;
   set<T>(key: string, value: T, ttl?: number): Promise<void>;
