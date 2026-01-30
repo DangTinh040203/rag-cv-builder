@@ -64,7 +64,14 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       overview:
         'Passionate software engineer with 5+ years of experience in building scalable web applications. Expert in React, Node.js, and cloud technologies. Proven track record of delivering high-quality code and leading development teams.',
       avatar: data.image_url,
-      information: [],
+      information: [
+        { label: 'Phone', value: '+1 (555) 123-4567' },
+        { label: 'Email', value: primaryEmail.email_address },
+        { label: 'Address', value: 'Ho Chi Minh City, Vietnam' },
+        { label: 'Website', value: 'https://example.com' },
+        { label: 'LinkedIn', value: 'https://linkedin.com/in/example' },
+        { label: 'GitHub', value: 'https://github.com/example' },
+      ],
       educations: [],
       workExperiences: [],
       projects: [],
