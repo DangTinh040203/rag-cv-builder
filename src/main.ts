@@ -8,6 +8,7 @@ import morgan from 'morgan';
 
 import { AppModule } from '@/app/app.module';
 import { Env } from '@/libs/configs';
+import { loggerConfig } from '@/libs/configs/logger.config';
 import { GlobalExceptionFilter } from '@/libs/filters';
 
 class BootstrapApplication {
@@ -15,7 +16,9 @@ class BootstrapApplication {
   private configService: ConfigService;
 
   async run() {
-    this.app = await NestFactory.create(AppModule);
+    this.app = await NestFactory.create(AppModule, {
+      logger: loggerConfig,
+    });
 
     this.configService = this.app.get(ConfigService);
     const port = this.configService.getOrThrow<number>(Env.PORT);

@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { CacheModule } from '@/libs/cache';
+import { Env } from '@/libs/configs';
 import { AppConfigModule } from '@/libs/configs/config.module';
 import { DatabaseModule } from '@/libs/databases/database.module';
 import { ClerkAuthGuard } from '@/libs/guards';
@@ -15,12 +18,26 @@ import { UserModule } from '@/modules/user/user.module';
     DatabaseModule,
     AppConfigModule,
     CacheModule,
+    ThrottlerModule.forRootAsync({
+      imports: [AppConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.getOrThrow<number>(Env.THROTTLE_TTL),
+          limit: configService.getOrThrow<number>(Env.THROTTLE_LIMIT),
+        },
+      ],
+    }),
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ClerkAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })

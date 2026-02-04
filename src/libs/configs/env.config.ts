@@ -14,6 +14,9 @@ export enum Env {
   DATABASE_URL = 'DATABASE_URL',
   REDIS_URL = 'REDIS_URL',
   REDIS_NAMESPACE = 'REDIS_NAMESPACE',
+
+  THROTTLE_TTL = 'THROTTLE_TTL',
+  THROTTLE_LIMIT = 'THROTTLE_LIMIT',
 }
 
 export const validationSchema = Joi.object({
@@ -27,4 +30,6 @@ export const validationSchema = Joi.object({
   [Env.DATABASE_URL]: Joi.string().required(),
   [Env.REDIS_URL]: Joi.string().required(),
   [Env.REDIS_NAMESPACE]: Joi.string().default('cv-builder'),
+  [Env.THROTTLE_TTL]: Joi.number().default(60000),
+  [Env.THROTTLE_LIMIT]: Joi.number().default(10),
 });
