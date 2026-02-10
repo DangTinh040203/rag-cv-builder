@@ -74,6 +74,31 @@ class CreateProjectDto {
   @MinLength(1)
   @MaxLength(5000)
   details: string;
+
+  @IsString()
+  @MaxLength(2000)
+  @IsOptional()
+  technologies: string;
+
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  position: string;
+
+  @IsString()
+  @MaxLength(5000)
+  @IsOptional()
+  responsibilities: string;
+
+  @IsString()
+  @MaxLength(200)
+  @IsOptional()
+  domain: string;
+
+  @IsString()
+  @MaxLength(500)
+  @IsOptional()
+  demo: string;
 }
 
 class CreateWorkExperienceDto {

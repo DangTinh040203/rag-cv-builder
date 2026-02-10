@@ -37,6 +37,11 @@ export interface Project {
   title: string;
   subTitle: string;
   details: string;
+  technologies: string;
+  position: string;
+  responsibilities: string;
+  domain: string;
+  demo?: string | null;
   resumeId: string;
 }
 
