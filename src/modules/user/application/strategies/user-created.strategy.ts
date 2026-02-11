@@ -76,6 +76,8 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       workExperiences: [],
       projects: [],
       skills: [],
+      certifications: [],
+      languages: [],
     });
 
     this.logger.log(

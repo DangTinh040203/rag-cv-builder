@@ -1,0 +1,8 @@
+model Language {
+  id          String @id @default(uuid())
+  name        String
+  description String // Level
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}

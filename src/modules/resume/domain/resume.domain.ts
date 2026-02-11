@@ -45,6 +45,21 @@ export interface Project {
   resumeId: string;
 }
 
+export interface Certification {
+  id: string;
+  name: string;
+  issuer: string;
+  date: Date;
+  resumeId: string;
+}
+
+export interface Language {
+  id: string;
+  name: string;
+  description: string;
+  resumeId: string;
+}
+
 export interface Resume {
   id: string;
   userId: string;
@@ -59,6 +74,8 @@ export interface Resume {
   skills: Array<Skill>;
   workExperiences: Array<WorkExperience>;
   projects: Array<Project>;
+  certifications: Array<Certification>;
+  languages: Array<Language>;
 
   createdAt: Date;
   updatedAt: Date;

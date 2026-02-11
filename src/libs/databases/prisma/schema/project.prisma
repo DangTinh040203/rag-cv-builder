@@ -1,0 +1,15 @@
+model Project {
+  id       String @id @default(uuid())
+  title    String
+  subTitle String
+  details  String
+
+  technologies     String  @default("")
+  position         String  @default("")
+  responsibilities String  @default("")
+  domain           String  @default("")
+  demo             String?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}

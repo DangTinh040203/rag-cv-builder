@@ -171,4 +171,42 @@ export class CreateResumeDto {
   @ValidateNested({ each: true })
   @Type(() => CreateSkillDto)
   skills: CreateSkillDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateCertificationDto)
+  certifications: CreateCertificationDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateLanguageDto)
+  languages: CreateLanguageDto[];
+}
+
+class CreateCertificationDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  name: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  issuer: string;
+
+  @Type(() => Date)
+  @IsDate()
+  date: Date;
+}
+
+class CreateLanguageDto {
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  name: string;
+
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  description: string;
 }

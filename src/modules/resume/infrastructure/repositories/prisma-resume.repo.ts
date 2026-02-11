@@ -14,6 +14,8 @@ const resumeInclude = {
   workExperiences: true,
   projects: true,
   skills: true,
+  certifications: true,
+  languages: true,
   user: true,
 } as const;
 
@@ -52,6 +54,12 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
         },
         skills: {
           create: payload.skills,
+        },
+        certifications: {
+          create: payload.certifications,
+        },
+        languages: {
+          create: payload.languages,
         },
       },
       include: resumeInclude,
@@ -95,6 +103,14 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
         skills: {
           deleteMany: {},
           create: payload.skills,
+        },
+        certifications: {
+          deleteMany: {},
+          create: payload.certifications,
+        },
+        languages: {
+          deleteMany: {},
+          create: payload.languages,
         },
       },
       include: resumeInclude,

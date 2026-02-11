@@ -1,0 +1,9 @@
+model Certification {
+  id     String   @id @default(uuid())
+  name   String
+  issuer String
+  date   DateTime
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}

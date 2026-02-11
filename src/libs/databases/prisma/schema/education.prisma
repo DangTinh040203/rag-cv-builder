@@ -1,0 +1,12 @@
+model Education {
+  id     String @id @default(uuid())
+  school String
+  degree String
+  major  String
+
+  startDate DateTime
+  endDate   DateTime? // Null = "Present"
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,8 @@
+model Skill {
+  id    String @id @default(uuid())
+  label String
+  value String
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+}
