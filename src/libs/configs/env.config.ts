@@ -17,6 +17,8 @@ export enum Env {
 
   THROTTLE_TTL = 'THROTTLE_TTL',
   THROTTLE_LIMIT = 'THROTTLE_LIMIT',
+
+  GEMINI_API_KEY = 'GEMINI_API_KEY',
 }
 
 export const validationSchema = Joi.object({
@@ -32,4 +34,5 @@ export const validationSchema = Joi.object({
   [Env.REDIS_NAMESPACE]: Joi.string().default('cv-builder'),
   [Env.THROTTLE_TTL]: Joi.number().default(60000),
   [Env.THROTTLE_LIMIT]: Joi.number().default(10),
+  [Env.GEMINI_API_KEY]: Joi.string().required(),
 });

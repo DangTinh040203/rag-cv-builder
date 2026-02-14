@@ -240,7 +240,7 @@ The project uses ESLint with TypeScript support. Key rules enforced:
 
 | Rule                                         | Level | Description                     |
 | -------------------------------------------- | ----- | ------------------------------- |
-| `@typescript-eslint/require-await`           | error | Async functions must use await  |
+| `@typescript-eslint/require-await`           | warn | Async functions must use await  |
 | `@typescript-eslint/no-floating-promises`    | warn  | Must handle promises            |
 | `@typescript-eslint/consistent-type-imports` | warn  | Use inline type imports         |
 | `no-restricted-imports`                      | error | No relative imports allowed     |

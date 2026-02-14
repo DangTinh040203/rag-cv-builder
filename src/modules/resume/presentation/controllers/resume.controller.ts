@@ -1,6 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
+} from '@nestjs/common';
 
-import { CurrentDbUser } from '@/libs/decorators';
+import { CurrentDbUser, Public } from '@/libs/decorators';
 import { ResumeService } from '@/modules/resume/application/services';
 import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
 import { type User } from '@/modules/user/domain';
@@ -8,6 +21,23 @@ import { type User } from '@/modules/user/domain';
 @Controller('resumes')
 export class ResumeController {
   constructor(private readonly resumeService: ResumeService) {}
+
+  @Public()
+  @UseInterceptors(FileInterceptor('file'))
+  @Post('/parse')
+  async parse(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }),
+          new FileTypeValidator({ fileType: 'application/pdf' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    console.log('🚀 ~ ResumeController ~ parse ~ file:', file);
+  }
 
   @Get()
   findResume(@CurrentDbUser() user: User) {
