@@ -8,6 +8,7 @@ import { Env } from '@/libs/configs';
 import { AppConfigModule } from '@/libs/configs/config.module';
 import { DatabaseModule } from '@/libs/databases/database.module';
 import { ClerkAuthGuard } from '@/libs/guards';
+import { RagModule } from '@/modules/rag/rag.module';
 import { ResumeModule } from '@/modules/resume/resume.module';
 import { UserModule } from '@/modules/user/user.module';
 
@@ -15,6 +16,7 @@ import { UserModule } from '@/modules/user/user.module';
   imports: [
     UserModule,
     ResumeModule,
+    RagModule,
     DatabaseModule,
     AppConfigModule,
     CacheModule,
