@@ -1,17 +1,17 @@
-import { FileInterceptor } from '@nestjs/platform-express';
 import {
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Post,
   UploadedFile,
   UseInterceptors,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 import { CurrentDbUser, Public } from '@/libs/decorators';
 import { ResumeService } from '@/modules/resume/application/services';
@@ -36,7 +36,7 @@ export class ResumeController {
     )
     file: Express.Multer.File,
   ) {
-    console.log('🚀 ~ ResumeController ~ parse ~ file:', file);
+    return this.resumeService.resumeParser(file);
   }
 
   @Get()

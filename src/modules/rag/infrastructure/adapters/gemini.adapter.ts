@@ -24,15 +24,20 @@ export class GeminiAdapter implements LLMProvider {
   }
 
   async sendMessage(content: string) {
+    this.logger.log('[GeminiAdapter]: START');
+
     const response = await this.genAI.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: content,
     });
 
     if (!response.text) {
-      this.logger.error('GeminiAdapter: Response text is undefined');
+      this.logger.error('[GeminiAdapter]: Response text is undefined');
       throw new InternalServerErrorException();
     }
+
+    this.logger.log('[GeminiAdapter]: END');
+    this.logger.log('[GeminiAdapter]: Response text', response.text);
 
     return response.text;
   }

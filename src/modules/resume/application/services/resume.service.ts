@@ -4,7 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { PDFParse } from 'pdf-parse';
 
+import { RagService } from '@/modules/rag/application/services/rag.service';
 import {
   type IResumeRepository,
   RESUME_REPOSITORY_TOKEN,
@@ -17,7 +19,103 @@ export class ResumeService {
   constructor(
     @Inject(RESUME_REPOSITORY_TOKEN)
     private readonly resumeRepository: IResumeRepository,
+    private readonly ragService: RagService,
   ) {}
+
+  async resumeParser(file: Express.Multer.File) {
+    const dataBuffer = file.buffer;
+    const parser = new PDFParse({ data: dataBuffer });
+    const data = await parser.getText();
+
+    const prompt = `
+      Extract the following information from the CV text below and return it as a JSON object following this interface:
+      
+      interface ResumeInformation {
+        label: string;
+        value: string;
+      }
+
+      interface Education {
+        school: string;
+        degree: string;
+        major: string;
+        startDate: Date;
+        endDate: Date | null;
+      }
+
+      interface Skill {
+        label: string;
+        value: string;
+      }
+
+      interface WorkExperience {
+        company: string;
+        position: string;
+        description: string;
+        startDate: Date;
+        endDate: Date | null;
+      }
+
+      interface Project {
+        title: string;
+        subTitle: string;
+        details: string;
+        technologies: string;
+        position: string;
+        responsibilities: string;
+        domain: string;
+        demo?: string | null;
+      }
+
+      interface Certification {
+        name: string;
+        issuer: string;
+        date: Date;
+      }
+
+      interface Language {
+        name: string;
+        description: string;
+      }
+
+      interface Resume {
+        title: string;
+        subTitle: string;
+        overview: string;
+        avatar: string | null;
+
+        information: Array<ResumeInformation>;
+        educations: Array<Education>;
+        skills: Array<Skill>;
+        workExperiences: Array<WorkExperience>;
+        projects: Array<Project>;
+        certifications: Array<Certification>;
+        languages: Array<Language>;
+      }
+
+
+      CV Text:
+      ${data.text}
+      
+      Return ONLY valid JSON.
+    `;
+
+    const response = await this.ragService.sendMessage(prompt);
+
+    // Basic cleanup of response (in case LLM includes markdown backticks)
+    const cleanedResponse = response
+      .replace(/^```json/, '')
+      .replace(/```$/, '')
+      .trim();
+
+    try {
+      return JSON.parse(cleanedResponse);
+    } catch {
+      throw new Error(
+        'Failed to parse LLM response as JSON: ' + cleanedResponse,
+      );
+    }
+  }
 
   async update(
     id: string,
