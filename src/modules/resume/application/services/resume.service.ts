@@ -7,6 +7,7 @@ import {
 import { PDFParse } from 'pdf-parse';
 
 import { RagService } from '@/modules/rag/application/services/rag.service';
+import { RESUME_PARSER_PROMPT } from '@/modules/resume/application/constants/prompt.constant';
 import {
   type IResumeRepository,
   RESUME_REPOSITORY_TOKEN,
@@ -27,78 +28,8 @@ export class ResumeService {
     const parser = new PDFParse({ data: dataBuffer });
     const data = await parser.getText();
 
-    const prompt = `
-      Extract the following information from the CV text below and return it as a JSON object following this interface:
-      
-      interface ResumeInformation {
-        label: string;
-        value: string;
-      }
-
-      interface Education {
-        school: string;
-        degree: string;
-        major: string;
-        startDate: Date;
-        endDate: Date | null;
-      }
-
-      interface Skill {
-        label: string;
-        value: string;
-      }
-
-      interface WorkExperience {
-        company: string;
-        position: string;
-        description: string;
-        startDate: Date;
-        endDate: Date | null;
-      }
-
-      interface Project {
-        title: string;
-        subTitle: string;
-        details: string;
-        technologies: string;
-        position: string;
-        responsibilities: string;
-        domain: string;
-        demo?: string | null;
-      }
-
-      interface Certification {
-        name: string;
-        issuer: string;
-        date: Date;
-      }
-
-      interface Language {
-        name: string;
-        description: string;
-      }
-
-      interface Resume {
-        title: string;
-        subTitle: string;
-        overview: string;
-        avatar: string | null;
-
-        information: Array<ResumeInformation>;
-        educations: Array<Education>;
-        skills: Array<Skill>;
-        workExperiences: Array<WorkExperience>;
-        projects: Array<Project>;
-        certifications: Array<Certification>;
-        languages: Array<Language>;
-      }
-
-
-      CV Text:
-      ${data.text}
-      
-      Return ONLY valid JSON.
-    `;
+    // Prepare prompt with injection defense
+    const prompt = RESUME_PARSER_PROMPT.replace('{cv_text}', data.text);
 
     const response = await this.ragService.sendMessage(prompt);
 
