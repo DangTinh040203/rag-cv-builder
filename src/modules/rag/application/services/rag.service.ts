@@ -1,3 +1,4 @@
+import { type Schema } from '@google/genai';
 import { Inject, Injectable } from '@nestjs/common';
 
 import {
@@ -12,7 +13,7 @@ export class RagService {
     private readonly llmProvider: LLMProvider,
   ) {}
 
-  async sendMessage(content: string) {
-    return this.llmProvider.sendMessage(content);
+  async sendMessage(content: string, schema?: Schema) {
+    return this.llmProvider.sendMessage(content, schema);
   }
 }

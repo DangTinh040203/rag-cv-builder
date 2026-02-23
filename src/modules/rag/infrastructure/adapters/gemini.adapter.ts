@@ -1,4 +1,8 @@
-import { GoogleGenAI } from '@google/genai';
+import {
+  type GenerateContentConfig,
+  GoogleGenAI,
+  type Schema,
+} from '@google/genai';
 import {
   Inject,
   Injectable,
@@ -23,12 +27,19 @@ export class GeminiAdapter implements LLMProvider {
     });
   }
 
-  async sendMessage(content: string) {
+  async sendMessage(content: string, schema?: Schema) {
     this.logger.log('[GeminiAdapter]: START');
+
+    const config: GenerateContentConfig = {};
+    if (schema) {
+      config.responseMimeType = 'application/json';
+      config.responseSchema = schema;
+    }
 
     const response = await this.genAI.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: content,
+      config: Object.keys(config).length > 0 ? config : undefined,
     });
 
     if (!response.text) {

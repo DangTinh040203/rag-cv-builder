@@ -7,7 +7,10 @@ import {
 import { PDFParse } from 'pdf-parse';
 
 import { RagService } from '@/modules/rag/application/services/rag.service';
-import { RESUME_PARSER_PROMPT } from '@/modules/resume/application/constants/prompt.constant';
+import {
+  RESUME_PARSER_PROMPT,
+  RESUME_SCHEMA,
+} from '@/modules/resume/application/constants/prompt.constant';
 import {
   type IResumeRepository,
   RESUME_REPOSITORY_TOKEN,
@@ -28,23 +31,14 @@ export class ResumeService {
     const parser = new PDFParse({ data: dataBuffer });
     const data = await parser.getText();
 
-    // Prepare prompt with injection defense
     const prompt = RESUME_PARSER_PROMPT.replace('{cv_text}', data.text);
 
-    const response = await this.ragService.sendMessage(prompt);
-
-    // Basic cleanup of response (in case LLM includes markdown backticks)
-    const cleanedResponse = response
-      .replace(/^```json/, '')
-      .replace(/```$/, '')
-      .trim();
+    const response = await this.ragService.sendMessage(prompt, RESUME_SCHEMA);
 
     try {
-      return JSON.parse(cleanedResponse);
+      return JSON.parse(response);
     } catch {
-      throw new Error(
-        'Failed to parse LLM response as JSON: ' + cleanedResponse,
-      );
+      throw new Error('Failed to parse LLM response as JSON: ' + response);
     }
   }
 
