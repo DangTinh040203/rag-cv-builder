@@ -8,7 +8,7 @@ export class HealthController {
   @Public()
   check() {
     return {
-      status: 'ok',
+      status: 'ok, checked',
       timestamp: new Date().toISOString(),
     };
   }
