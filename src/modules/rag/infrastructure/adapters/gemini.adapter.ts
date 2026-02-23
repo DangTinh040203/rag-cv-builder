@@ -37,7 +37,7 @@ export class GeminiAdapter implements LLMProvider {
     }
 
     this.logger.log('[GeminiAdapter]: END');
-    this.logger.log('[GeminiAdapter]: Response text', response.text);
+    this.logger.log('[GeminiAdapter]: Response text');
 
     return response.text;
   }
