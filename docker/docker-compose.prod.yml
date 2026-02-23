@@ -6,8 +6,6 @@ services:
     image: asia-southeast1-docker.pkg.dev/project-bd8e23f4-e7fc-43d5-99e/cv-builder-repo/rag-cv-builder:latest
     container_name: rag-cv-builder
     restart: always
-    ports:
-      - '3000:3000'
     env_file: .env
     depends_on:
       - redis

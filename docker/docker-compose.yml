@@ -1,7 +1,21 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
+  # 1. Backend NestJS
+  api:
+    image: asia-southeast1-docker.pkg.dev/project-bd8e23f4-e7fc-43d5-99e/cv-builder-repo/rag-cv-builder:latest
+    container_name: rag-cv-builder
+    restart: always
+    env_file: .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - cv-builder-network
+
+  # 2. PostgreSQL Database
   postgres:
     image: postgres:16-alpine
     container_name: cv-builder-postgres
@@ -22,7 +36,7 @@ services:
     networks:
       - cv-builder-network
 
-  # pgAdmin - PostgreSQL Management Tool
+  # 3. pgAdmin - PostgreSQL Management Tool
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: cv-builder-pgadmin
@@ -41,7 +55,7 @@ services:
     networks:
       - cv-builder-network
 
-  # Redis Cache
+  # 4. Redis Cache
   redis:
     image: redis:7-alpine
     container_name: cv-builder-redis
@@ -59,7 +73,7 @@ services:
     networks:
       - cv-builder-network
 
-  # MinIO Object Storage
+  # 5. MinIO Object Storage
   minio:
     image: minio/minio:latest
     container_name: cv-builder-minio
@@ -81,7 +95,7 @@ services:
     networks:
       - cv-builder-network
 
-  # NATS Message Broker
+  # 6. NATS Message Broker
   nats:
     image: nats:2-alpine
     container_name: cv-builder-nats
@@ -95,6 +109,21 @@ services:
       - ./data/nats:/data
     networks:
       - cv-builder-network
+
+  # 7. Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: cv-builder-nginx
+    restart: always
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+    networks:
+      - cv-builder-network
+
 networks:
   cv-builder-network:
     driver: bridge
