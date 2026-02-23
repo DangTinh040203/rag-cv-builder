@@ -60,8 +60,8 @@ COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/src/libs/databases/prisma/schema ./src/libs/databases/prisma/schema
 COPY --from=builder /app/src/libs/databases/prisma/migrations ./src/libs/databases/prisma/migrations
 
-# Install prisma CLI for running migrations
-RUN npx prisma generate
+# Install prisma CLI for running migrations at startup
+RUN pnpm add prisma
 
 # Copy entrypoint script
 COPY docker/entrypoint.sh ./entrypoint.sh
