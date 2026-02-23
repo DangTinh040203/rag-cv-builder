@@ -1,29 +1,24 @@
-# =============================================================================
-# Stage 1: Base - Setup pnpm and dependencies
-# =============================================================================
-FROM node:22-alpine AS base
+# ================================
+# Stage 1: Install dependencies
+# ================================
+FROM node:22-alpine AS deps
 
-# Install pnpm globally
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Set working directory
 WORKDIR /app
-
-# =============================================================================
-# Stage 2: Dependencies - Install all dependencies
-# =============================================================================
-FROM base AS deps
 
 # Copy package files
 COPY package.json pnpm-lock.yaml ./
 
-# Install all dependencies (including devDependencies for building)
+# Install all dependencies (including devDependencies for build)
 RUN pnpm install --frozen-lockfile
 
-# =============================================================================
-# Stage 3: Builder - Build the application
-# =============================================================================
-FROM base AS builder
+# ================================
+# Stage 2: Build the application
+# ================================
+FROM node:22-alpine AS builder
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
@@ -32,53 +27,50 @@ COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code and config files
 COPY package.json pnpm-lock.yaml ./
-COPY tsconfig.json tsconfig.build.json nest-cli.json ./
+COPY tsconfig.json tsconfig.build.json nest-cli.json prisma.config.ts ./
 COPY src ./src
 
-# Build the application
-RUN pnpm build
+# Generate Prisma client
+RUN pnpm run db:generate
 
-# Prune devDependencies to keep only production deps
+# Build the NestJS application
+RUN pnpm run build
+
+# Remove devDependencies to slim down
 RUN pnpm prune --prod
 
-# =============================================================================
-# Stage 4: Production - Minimal runtime image
-# =============================================================================
+# ================================
+# Stage 3: Production image
+# ================================
 FROM node:22-alpine AS production
 
-# Add labels for better image management
-LABEL maintainer="rag-cv-builder"
-LABEL org.opencontainers.image.title="RAG CV Builder API"
-LABEL org.opencontainers.image.description="NestJS API for RAG CV Builder"
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
+# Add non-root user for security
+RUN addgroup --system --gid 1001 nestjs && \
     adduser --system --uid 1001 nestjs
 
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV=production
-ENV PORT=3000
+# Copy only what's needed for production
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/prisma.config.ts ./
+COPY --from=builder /app/src/libs/databases/prisma/schema ./src/libs/databases/prisma/schema
+COPY --from=builder /app/src/libs/databases/prisma/migrations ./src/libs/databases/prisma/migrations
 
-# Copy only production dependencies
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+# Set ownership
+RUN chown -R nestjs:nestjs /app
 
-# Copy built application
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
-
-# Copy package.json for runtime
-COPY --from=builder --chown=nestjs:nodejs /app/package.json ./
-
-# Switch to non-root user
 USER nestjs
 
 # Expose port
 EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD wget --spider -q http://localhost:3000/health || exit 1
 
 # Start the application
 CMD ["node", "dist/main"]

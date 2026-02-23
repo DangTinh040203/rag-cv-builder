@@ -1,0 +1,159 @@
+name: Deploy Backend to GCE
+
+on:
+  push:
+    branches: [main]
+
+env:
+  GAR_REGION: asia-southeast1
+  GCP_PROJECT_ID: project-bd8e23f4-e7fc-43d5-99e
+  GAR_REPO: cv-builder
+  IMAGE_NAME: rag-cv-builder
+  VM_HOST: 34.134.52.209
+  VM_USER: caodangtinh42
+  DEPLOY_DIR: /app/rag-cv-builder/backend
+
+jobs:
+  build-and-deploy:
+    name: Build, Push & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ─── 1. Checkout code ───
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ─── 2. Authenticate to Google Cloud ───
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      # ─── 3. Configure Docker for Artifact Registry ───
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GAR_REGION }}-docker.pkg.dev --quiet
+
+      # ─── 4. Build Docker image ───
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f docker/Dockerfile \
+            -t ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest \
+            .
+
+      # ─── 5. Push to Artifact Registry ───
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
+
+      # ─── 6. SSH into VM and deploy ───
+      - name: Deploy to VM
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ env.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "📁 Setting up deploy directory..."
+            mkdir -p ${{ env.DEPLOY_DIR }}
+            cd ${{ env.DEPLOY_DIR }}
+
+            echo "🔐 Writing .env.prod..."
+            cat > .env.prod << 'ENVEOF'
+            ${{ secrets.ENV_PROD }}
+            ENVEOF
+
+            echo "📄 Writing docker-compose.prod.yml..."
+            cat > docker-compose.prod.yml << 'COMPOSEEOF'
+            version: '3.8'
+
+            services:
+              backend:
+                image: ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
+                container_name: cv-builder-backend
+                restart: unless-stopped
+                ports:
+                  - '3000:3000'
+                env_file:
+                  - .env.prod
+                depends_on:
+                  redis:
+                    condition: service_healthy
+                  nats:
+                    condition: service_healthy
+                healthcheck:
+                  test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/health']
+                  interval: 30s
+                  timeout: 5s
+                  start_period: 15s
+                  retries: 3
+                networks:
+                  - cv-builder-network
+
+              redis:
+                image: redis:7-alpine
+                container_name: cv-builder-redis
+                restart: unless-stopped
+                ports:
+                  - '6379:6379'
+                command: redis-server --appendonly yes
+                volumes:
+                  - redis-data:/data
+                healthcheck:
+                  test: ['CMD', 'redis-cli', 'ping']
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                networks:
+                  - cv-builder-network
+
+              nats:
+                image: nats:2-alpine
+                container_name: cv-builder-nats
+                restart: unless-stopped
+                ports:
+                  - '4222:4222'
+                  - '8222:8222'
+                command: ['--http_port', '8222', '--jetstream', '--store_dir', '/data']
+                volumes:
+                  - nats-data:/data
+                healthcheck:
+                  test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                networks:
+                  - cv-builder-network
+
+            volumes:
+              redis-data:
+              nats-data:
+
+            networks:
+              cv-builder-network:
+                driver: bridge
+            COMPOSEEOF
+
+            echo "🔑 Authenticating Docker to Artifact Registry..."
+            gcloud auth configure-docker ${{ env.GAR_REGION }}-docker.pkg.dev --quiet
+
+            echo "⬇️  Pulling latest image..."
+            docker pull ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
+
+            echo "🗃️  Running Prisma migrations..."
+            docker run --rm \
+              --env-file .env.prod \
+              ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest \
+              npx prisma migrate deploy
+
+            echo "🚀 Starting services..."
+            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
+
+            echo "🧹 Cleaning up old images..."
+            docker image prune -f
+
+            echo "✅ Deployment complete!"
