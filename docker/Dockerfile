@@ -60,6 +60,13 @@ COPY --from=builder /app/prisma.config.ts ./
 COPY --from=builder /app/src/libs/databases/prisma/schema ./src/libs/databases/prisma/schema
 COPY --from=builder /app/src/libs/databases/prisma/migrations ./src/libs/databases/prisma/migrations
 
+# Install prisma CLI for running migrations
+RUN npx prisma generate
+
+# Copy entrypoint script
+COPY docker/entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
 # Set ownership
 RUN chown -R nestjs:nestjs /app
 
@@ -68,5 +75,5 @@ USER nestjs
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["node", "dist/main"]
+# Run migrations then start the application
+CMD ["./entrypoint.sh"]
