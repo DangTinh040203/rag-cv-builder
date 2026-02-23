@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
+import { HealthController } from '@/app/health.controller';
 import { CacheModule } from '@/libs/cache';
 import { Env } from '@/libs/configs';
 import { AppConfigModule } from '@/libs/configs/config.module';
@@ -31,7 +32,7 @@ import { UserModule } from '@/modules/user/user.module';
       ],
     }),
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,
