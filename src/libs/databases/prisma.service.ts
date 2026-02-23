@@ -10,16 +10,29 @@ import { PrismaClient } from '@/libs/databases/prisma/generated/client';
 export class PrismaService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger(PrismaService.name);
 
-  constructor(configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
+    const isProduction =
+      configService.get<string>(Env.NODE_ENV) === 'production';
+
     const pool = new Pool({
       connectionString: configService.getOrThrow<string>(Env.DATABASE_URL),
+      connectionTimeoutMillis: 5000,
+      ...(isProduction && { ssl: { rejectUnauthorized: false } }),
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 
   async onModuleInit() {
-    await this.$connect();
-    this.logger.log('🚀 Connected to database', PrismaService.name);
+    try {
+      await this.$connect();
+      await this.$queryRaw`SELECT 1`;
+      this.logger.log(
+        `🚀 [${this.configService.get<string>(Env.NODE_ENV)}] Connected to database`,
+      );
+    } catch (error) {
+      this.logger.error('❌ Failed to connect to database', error);
+      throw error;
+    }
   }
 }

@@ -1,6 +1,8 @@
 import Joi from 'joi';
 
 export enum Env {
+  NODE_ENV = 'NODE_ENV',
+
   PORT = 'PORT',
   FRONTEND_ORIGIN = 'FRONTEND_ORIGIN',
 
@@ -22,6 +24,7 @@ export enum Env {
 }
 
 export const validationSchema = Joi.object({
+  [Env.NODE_ENV]: Joi.string().optional(),
   [Env.PORT]: Joi.number().required(),
   [Env.FRONTEND_ORIGIN]: Joi.string().required(),
   [Env.API_PREFIX]: Joi.string().default('api'),

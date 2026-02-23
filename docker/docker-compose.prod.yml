@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Backend NestJS
+  api:
+    image: asia-southeast1-docker.pkg.dev/project-bd8e23f4-e7fc-43d5-99e/cv-builder-repo/rag-cv-builder:latest
+    container_name: rag-cv-builder
+    restart: always
+    ports:
+      - '3000:3000'
+    env_file: .env
+    depends_on:
+      - redis
+      - nats
+    networks:
+      - cv-builder-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cv-builder-redis
+    restart: always
+    command: redis-server --appendonly yes
+    networks:
+      - cv-builder-network
+
+  # NATS Message Broker
+  nats:
+    image: nats:2-alpine
+    container_name: cv-builder-nats
+    restart: always
+    networks:
+      - cv-builder-network
+
+networks:
+  cv-builder-network:
+    driver: bridge
