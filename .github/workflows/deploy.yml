@@ -1,159 +1,60 @@
-name: Deploy Backend to GCE
+name: Build and Deploy to GCP VM
 
 on:
   push:
-    branches: [main]
 
 env:
-  GAR_REGION: asia-southeast1
-  GCP_PROJECT_ID: project-bd8e23f4-e7fc-43d5-99e
-  GAR_REPO: cv-builder
+  PROJECT_ID: project-bd8e23f4-e7fc-43d5-99e
+  REGION: asia-southeast1
+  REPO_NAME: cv-builder-repo
   IMAGE_NAME: rag-cv-builder
-  VM_HOST: 34.134.52.209
-  VM_USER: caodangtinh42
-  DEPLOY_DIR: /app/rag-cv-builder/backend
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
 
 jobs:
-  build-and-deploy:
-    name: Build, Push & Deploy
+  build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      # ─── 1. Checkout code ───
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # ─── 2. Authenticate to Google Cloud ───
-      - name: Authenticate to GCP
+      - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: '${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
 
-      # ─── 3. Configure Docker for Artifact Registry ───
-      - name: Configure Docker
-        run: gcloud auth configure-docker ${{ env.GAR_REGION }}-docker.pkg.dev --quiet
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
 
-      # ─── 4. Build Docker image ───
-      - name: Build Docker image
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and Push Docker Image
         run: |
-          docker build \
-            -f docker/Dockerfile \
-            -t ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            -t ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest \
-            .
+          DOCKER_TAG="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/${{ env.IMAGE_NAME }}:latest"
+          docker build -t $DOCKER_TAG -f docker/Dockerfile .
+          docker push $DOCKER_TAG
 
-      # ─── 5. Push to Artifact Registry ───
-      - name: Push Docker image
-        run: |
-          docker push ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          docker push ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
-
-      # ─── 6. SSH into VM and deploy ───
-      - name: Deploy to VM
-        uses: appleboy/ssh-action@v1
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.VM_HOST }}
-          username: ${{ env.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            set -e
-
-            echo "📁 Setting up deploy directory..."
-            mkdir -p ${{ env.DEPLOY_DIR }}
-            cd ${{ env.DEPLOY_DIR }}
-
-            echo "🔐 Writing .env.prod..."
-            cat > .env.prod << 'ENVEOF'
-            ${{ secrets.ENV_PROD }}
-            ENVEOF
-
-            echo "📄 Writing docker-compose.prod.yml..."
-            cat > docker-compose.prod.yml << 'COMPOSEEOF'
-            version: '3.8'
-
-            services:
-              backend:
-                image: ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
-                container_name: cv-builder-backend
-                restart: unless-stopped
-                ports:
-                  - '3000:3000'
-                env_file:
-                  - .env.prod
-                depends_on:
-                  redis:
-                    condition: service_healthy
-                  nats:
-                    condition: service_healthy
-                healthcheck:
-                  test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/health']
-                  interval: 30s
-                  timeout: 5s
-                  start_period: 15s
-                  retries: 3
-                networks:
-                  - cv-builder-network
-
-              redis:
-                image: redis:7-alpine
-                container_name: cv-builder-redis
-                restart: unless-stopped
-                ports:
-                  - '6379:6379'
-                command: redis-server --appendonly yes
-                volumes:
-                  - redis-data:/data
-                healthcheck:
-                  test: ['CMD', 'redis-cli', 'ping']
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
-                networks:
-                  - cv-builder-network
-
-              nats:
-                image: nats:2-alpine
-                container_name: cv-builder-nats
-                restart: unless-stopped
-                ports:
-                  - '4222:4222'
-                  - '8222:8222'
-                command: ['--http_port', '8222', '--jetstream', '--store_dir', '/data']
-                volumes:
-                  - nats-data:/data
-                healthcheck:
-                  test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8222/healthz']
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
-                networks:
-                  - cv-builder-network
-
-            volumes:
-              redis-data:
-              nats-data:
-
-            networks:
-              cv-builder-network:
-                driver: bridge
-            COMPOSEEOF
-
-            echo "🔑 Authenticating Docker to Artifact Registry..."
-            gcloud auth configure-docker ${{ env.GAR_REGION }}-docker.pkg.dev --quiet
-
-            echo "⬇️  Pulling latest image..."
-            docker pull ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest
-
-            echo "🗃️  Running Prisma migrations..."
-            docker run --rm \
-              --env-file .env.prod \
-              ${{ env.GAR_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.IMAGE_NAME }}:latest \
-              npx prisma migrate deploy
-
-            echo "🚀 Starting services..."
-            docker compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
-
-            echo "🧹 Cleaning up old images..."
+            cd ~/_work/rag-cv-builder
+            
+            gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
+            
+            docker compose -f docker-compose.prod.yml pull api
+            docker compose -f docker-compose.prod.yml up -d
+            
             docker image prune -f
-
-            echo "✅ Deployment complete!"
