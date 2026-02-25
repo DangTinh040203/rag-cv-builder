@@ -29,6 +29,7 @@ export class GeminiAdapter implements LLMProvider {
 
   async sendMessage(content: string, schema?: Schema) {
     this.logger.log('[GeminiAdapter]: START');
+    const startTime = Date.now();
 
     const config: GenerateContentConfig = {};
     if (schema) {
@@ -37,7 +38,7 @@ export class GeminiAdapter implements LLMProvider {
     }
 
     const response = await this.genAI.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash-lite',
       contents: content,
       config: Object.keys(config).length > 0 ? config : undefined,
     });
@@ -47,7 +48,10 @@ export class GeminiAdapter implements LLMProvider {
       throw new InternalServerErrorException();
     }
 
-    this.logger.log('[GeminiAdapter]: END');
+    const endTime = Date.now();
+    this.logger.log(
+      `[GeminiAdapter]: END - Duration: ${endTime - startTime}ms`,
+    );
     this.logger.log('[GeminiAdapter]: Response text');
 
     return response.text;
