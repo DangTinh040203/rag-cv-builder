@@ -1,7 +1,6 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
-  IsDate,
   IsOptional,
   IsString,
   MaxLength,
@@ -49,14 +48,12 @@ class CreateEducationDto {
   @MaxLength(200)
   major: string;
 
-  @Type(() => Date)
-  @IsDate()
-  startDate: Date;
+  @IsString()
+  startDate: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  endDate: Date | null;
+  @IsString()
+  endDate: string | null;
 }
 
 class CreateProjectDto {
@@ -118,14 +115,12 @@ class CreateWorkExperienceDto {
   @IsOptional()
   description: string;
 
-  @Type(() => Date)
-  @IsDate()
-  startDate: Date;
+  @IsString()
+  startDate: string;
 
   @IsOptional()
-  @Type(() => Date)
-  @IsDate()
-  endDate: Date | null;
+  @IsString()
+  endDate: string | null;
 }
 
 export class CreateResumeDto {
@@ -194,9 +189,8 @@ class CreateCertificationDto {
   @MaxLength(200)
   issuer: string;
 
-  @Type(() => Date)
-  @IsDate()
-  date: Date;
+  @IsString()
+  date: string;
 }
 
 class CreateLanguageDto {

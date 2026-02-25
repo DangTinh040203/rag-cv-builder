@@ -8,6 +8,8 @@ import { PDFParse } from 'pdf-parse';
 
 import { RagService } from '@/modules/rag/application/services/rag.service';
 import {
+  MATCH_CV_JD_PROMPT,
+  MATCH_CV_JD_SCHEMA,
   RESUME_PARSER_PROMPT,
   RESUME_SCHEMA,
 } from '@/modules/resume/application/constants/prompt.constant';
@@ -39,6 +41,53 @@ export class ResumeService {
       return JSON.parse(response);
     } catch {
       throw new Error('Failed to parse LLM response as JSON: ' + response);
+    }
+  }
+
+  async matchResume(
+    resumeId: string,
+    jobDescriptionText: string,
+    userId: string,
+  ) {
+    const resume = await this.resumeRepository.findById(resumeId);
+    if (!resume) {
+      throw new NotFoundException(`Resume with id ${resumeId} not found`);
+    }
+
+    if (resume.userId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resume',
+      );
+    }
+
+    const cvJson = JSON.stringify({
+      title: resume.title,
+      subTitle: resume.subTitle,
+      overview: resume.overview,
+      skills: resume.skills,
+      workExperiences: resume.workExperiences,
+      projects: resume.projects,
+      educations: resume.educations,
+      certifications: resume.certifications,
+      languages: resume.languages,
+    });
+
+    const prompt = MATCH_CV_JD_PROMPT.replace('{cv_json}', cvJson).replace(
+      '{jd_text}',
+      jobDescriptionText,
+    );
+
+    const response = await this.ragService.sendMessage(
+      prompt,
+      MATCH_CV_JD_SCHEMA,
+    );
+
+    try {
+      return JSON.parse(response);
+    } catch {
+      throw new Error(
+        'Failed to parse LLM match response as JSON: ' + response,
+      );
     }
   }
 
