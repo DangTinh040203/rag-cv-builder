@@ -77,8 +77,8 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-assignment': 0,
       '@typescript-eslint/no-unsafe-argument': 0,
       '@typescript-eslint/no-unsafe-return': 0,
+      '@typescript-eslint/no-unsafe-member-access': 0,
       '@typescript-eslint/require-await': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-unused-vars': [
         'warn',

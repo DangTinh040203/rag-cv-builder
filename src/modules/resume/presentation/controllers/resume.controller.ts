@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -13,7 +12,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { PDFParse } from 'pdf-parse';
 
 import { CurrentDbUser, Public } from '@/libs/decorators';
 import { ResumeService } from '@/modules/resume/application/services';
@@ -21,6 +19,7 @@ import {
   MatchResumeDto,
   UpdateResumeDto,
 } from '@/modules/resume/presentation/DTOs';
+import { ParseJdInterceptor } from '@/modules/resume/presentation/interceptors/parse-jd.interceptor';
 import { type User } from '@/modules/user/domain';
 
 @Controller('resumes')
@@ -44,28 +43,14 @@ export class ResumeController {
     return this.resumeService.resumeParser(file);
   }
 
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file'), ParseJdInterceptor)
   @Post('/match')
-  async match(
-    @Body() payload: MatchResumeDto,
-    @UploadedFile() file: Express.Multer.File | undefined,
-    @CurrentDbUser() user: User,
-  ) {
-    let jdText = payload.jobDescription;
-
-    if (file) {
-      const parser = new PDFParse({ data: file.buffer });
-      const data = await parser.getText();
-      jdText = data.text;
-    }
-
-    if (!jdText || jdText.trim().length === 0) {
-      throw new BadRequestException(
-        'Please provide a Job Description (text or file)',
-      );
-    }
-
-    return this.resumeService.matchResume(payload.resumeId, jdText, user.id);
+  async match(@Body() payload: MatchResumeDto, @CurrentDbUser() user: User) {
+    return this.resumeService.matchResume(
+      payload.resumeId,
+      payload.jobDescription,
+      user.id,
+    );
   }
 
   @Get()
