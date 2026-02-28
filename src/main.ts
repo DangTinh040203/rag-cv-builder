@@ -1,4 +1,9 @@
-import { type INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import {
+  BadRequestException,
+  type INestApplication,
+  Logger,
+  ValidationPipe,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -10,6 +15,7 @@ import { AppModule } from '@/app/app.module';
 import { Env } from '@/libs/configs';
 import { loggerConfig } from '@/libs/configs/logger.config';
 import { GlobalExceptionFilter } from '@/libs/filters';
+import { formatError } from '@/libs/utils/formatError.util';
 
 class BootstrapApplication {
   app: INestApplication;
@@ -45,6 +51,9 @@ class BootstrapApplication {
         transform: true,
         transformOptions: {
           enableImplicitConversion: true,
+        },
+        exceptionFactory: (validationErrors) => {
+          return new BadRequestException(formatError(validationErrors));
         },
       }),
     );
