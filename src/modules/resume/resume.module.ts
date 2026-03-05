@@ -10,9 +10,10 @@ import {
 } from '@/modules/resume/application/services';
 import { PrismaAdapterResumeRepository } from '@/modules/resume/infrastructure/repositories/prisma-resume.repo';
 import { ResumeController } from '@/modules/resume/presentation/controllers';
+import { UserModule } from '@/modules/user/user.module';
 
 @Module({
-  imports: [RagModule],
+  imports: [RagModule, UserModule],
   providers: [
     Logger,
     ResumeService,

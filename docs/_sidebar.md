@@ -6,6 +6,7 @@
 
 - **Project Structure**
   - [Folder Structure](project-structure/folder-structure.md)
+  - [Module Structure & Data Flow](project-structure/module-structure.md)
 
 - **Development**
   - [Code Conventions](development/code-conventions.md)

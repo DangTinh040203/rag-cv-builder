@@ -1,6 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
 
-import { ResumeModule } from '@/modules/resume/resume.module';
 import {
   CLERK_STRATEGY,
   USER_REPOSITORY_TOKEN,
@@ -16,7 +15,7 @@ import { PrismaAdapterUserRepository } from '@/modules/user/infrastructure/repos
 import { UserController } from '@/modules/user/presentation/controllers';
 
 @Module({
-  imports: [ResumeModule],
+  imports: [],
   controllers: [UserController],
   providers: [
     ClerkWebhookService,
