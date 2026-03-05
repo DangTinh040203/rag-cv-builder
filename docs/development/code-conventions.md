@@ -120,6 +120,18 @@ export class UserService {
 }
 ```
 
+### DI Tokens
+
+Always use `Symbol` for DI tokens instead of plain strings to prevent naming collisions across the application.
+
+```typescript
+// ✅ Good - Using Symbol
+export const USER_REPOSITORY_TOKEN = Symbol('USER_REPOSITORY_TOKEN');
+
+// ❌ Bad - Using string
+export const USER_REPOSITORY_TOKEN = 'USER_REPOSITORY_TOKEN';
+```
+
 ### DTOs (Data Transfer Objects)
 
 ```typescript

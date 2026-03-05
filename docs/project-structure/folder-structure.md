@@ -61,9 +61,9 @@ src/libs/
 
 | Layer              | Purpose                        | Dependencies           |
 | ------------------ | ------------------------------ | ---------------------- |
-| **Domain**         | Entities, interfaces, ports    | None (pure TypeScript) |
-| **Application**    | Business logic, use cases      | Domain layer only      |
-| **Infrastructure** | DB adapters, external services | Domain + external libs |
+| **Domain**         | Entities (with behaviors), interfaces, ports, events | None (pure TypeScript) |
+| **Application**    | Business logic, services, commands, event listeners | Domain layer only      |
+| **Infrastructure** | DB adapters, external APIs     | Domain + external libs |
 | **Presentation**   | Controllers, DTOs, validation  | Application + Domain   |
 
 ## Key Files

@@ -4,9 +4,13 @@ import {
   type ExceptionFilter,
   HttpException,
   HttpStatus,
+  Inject,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { type Request, type Response } from 'express';
+
+import { Env } from '@/libs/configs';
 
 /**
  * Standard API Error Response Interface.
@@ -36,6 +40,14 @@ export interface ApiErrorResponse {
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
+  private readonly isProduction: boolean;
+
+  constructor(
+    @Inject(ConfigService) private readonly configService: ConfigService,
+  ) {
+    this.isProduction =
+      this.configService.get<string>(Env.NODE_ENV) === 'production';
+  }
 
   /**
    * Entry point: Called by NestJS whenever an exception is thrown.
@@ -79,7 +91,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // --- SECURITY: Mask internal errors in Production ---
     // In production, we should not leak stack traces or internal logic details for 500 errors.
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isProduction = this.isProduction;
     if (statusCode === HttpStatus.INTERNAL_SERVER_ERROR && isProduction) {
       message = 'Internal server error';
       error = undefined;

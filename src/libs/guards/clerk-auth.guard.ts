@@ -34,11 +34,13 @@ export class ClerkAuthGuard implements CanActivate {
     const request: Request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
 
-    if (!authHeader) {
-      throw new UnauthorizedException('No authorization header provided');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException(
+        'Missing or invalid authorization header',
+      );
     }
 
-    const token: string = authHeader.replace('Bearer ', '');
+    const token = authHeader.slice(7);
 
     if (!token) {
       throw new UnauthorizedException('No token provided');

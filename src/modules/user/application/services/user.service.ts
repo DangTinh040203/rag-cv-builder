@@ -5,7 +5,7 @@ import {
   type IUserRepository,
   USER_REPOSITORY_TOKEN,
 } from '@/modules/user/application/interfaces';
-import { type User } from '@/modules/user/domain';
+import { User } from '@/modules/user/domain';
 
 @Injectable()
 export class UserService {

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { UserService } from '@/modules/user/application/services/user.service';
-import { type User } from '@/modules/user/domain';
+import { User } from '@/modules/user/domain';
 
 @Injectable()
 export class UserByClerkIdPipe implements PipeTransform {

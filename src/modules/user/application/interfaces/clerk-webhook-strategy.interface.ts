@@ -3,7 +3,7 @@ import {
   type ClerkWebhook,
 } from '@/modules/user/domain';
 
-export const CLERK_STRATEGY = 'CLERK_STRATEGY';
+export const CLERK_STRATEGY = Symbol('CLERK_STRATEGY');
 
 export interface IClerkWebhookStrategy {
   getType(): ClerkUserWebhook;

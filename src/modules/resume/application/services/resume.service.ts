@@ -4,125 +4,32 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PDFParse } from 'pdf-parse';
 
-import { RagService } from '@/modules/rag/application/services/rag.service';
-import {
-  MATCH_CV_JD_PROMPT,
-  MATCH_CV_JD_SCHEMA,
-  RESUME_PARSER_PROMPT,
-  RESUME_SCHEMA,
-} from '@/modules/resume/application/constants/prompt.constant';
+import { type UpdateResumeCommand } from '@/modules/resume/application/commands';
 import {
   type IResumeRepository,
   RESUME_REPOSITORY_TOKEN,
 } from '@/modules/resume/application/interfaces';
 import { Resume } from '@/modules/resume/domain';
-import { UpdateResumeDto } from '@/modules/resume/presentation/DTOs';
 
 @Injectable()
 export class ResumeService {
   constructor(
     @Inject(RESUME_REPOSITORY_TOKEN)
     private readonly resumeRepository: IResumeRepository,
-    private readonly ragService: RagService,
   ) {}
-
-  async resumeParser(file: Express.Multer.File) {
-    const dataBuffer = file.buffer;
-    const parser = new PDFParse({ data: dataBuffer });
-    const data = await parser.getText();
-
-    const prompt = RESUME_PARSER_PROMPT.replace('{cv_text}', data.text);
-
-    const response = await this.ragService.sendMessage(prompt, RESUME_SCHEMA);
-
-    try {
-      return JSON.parse(response);
-    } catch {
-      throw new Error('Failed to parse LLM response as JSON: ' + response);
-    }
-  }
-
-  async matchResume(
-    resumeId: string,
-    jobDescriptionText: string,
-    userId: string,
-  ) {
-    const resume = await this.resumeRepository.findById(resumeId);
-    if (!resume) {
-      throw new NotFoundException(`Resume with id ${resumeId} not found`);
-    }
-
-    if (resume.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to access this resume',
-      );
-    }
-
-    const cvJson = JSON.stringify({
-      title: resume.title,
-      subTitle: resume.subTitle,
-      overview: resume.overview,
-      skills: resume.skills,
-      workExperiences: resume.workExperiences,
-      projects: resume.projects,
-      educations: resume.educations,
-      certifications: resume.certifications,
-      languages: resume.languages,
-    });
-
-    const prompt = MATCH_CV_JD_PROMPT.replace('{cv_json}', cvJson).replace(
-      '{jd_text}',
-      jobDescriptionText,
-    );
-
-    const response = await this.ragService.sendMessage(
-      prompt,
-      MATCH_CV_JD_SCHEMA,
-    );
-
-    try {
-      return JSON.parse(response);
-    } catch {
-      throw new Error(
-        'Failed to parse LLM match response as JSON: ' + response,
-      );
-    }
-  }
 
   async update(
     id: string,
-    payload: UpdateResumeDto,
+    payload: UpdateResumeCommand,
     userId: string,
   ): Promise<Resume> {
-    const resumeExist = await this.resumeRepository.findById(id);
-    if (!resumeExist) {
-      throw new NotFoundException(`Resume with id ${id} not found`);
-    }
-
-    if (resumeExist.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to update this resume',
-      );
-    }
-
+    await this.findAndAuthorize(id, userId);
     return this.resumeRepository.update(id, payload);
   }
 
   async findById(id: string, userId: string): Promise<Resume> {
-    const resumeExist = await this.resumeRepository.findById(id);
-    if (!resumeExist) {
-      throw new NotFoundException(`Resume with id ${id} not found`);
-    }
-
-    if (resumeExist.userId !== userId) {
-      throw new ForbiddenException(
-        'You do not have permission to view this resume',
-      );
-    }
-
-    return resumeExist;
+    return this.findAndAuthorize(id, userId);
   }
 
   async findByUserId(userId: string): Promise<Resume | null> {
@@ -130,17 +37,24 @@ export class ResumeService {
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    const exist = await this.resumeRepository.findById(id);
-    if (!exist) {
+    await this.findAndAuthorize(id, userId);
+    return this.resumeRepository.delete(id);
+  }
+
+  /**
+   * Find a resume by ID and verify it belongs to the given user.
+   * Throws NotFoundException if not found, ForbiddenException if not owned.
+   */
+  private async findAndAuthorize(id: string, userId: string): Promise<Resume> {
+    const resume = await this.resumeRepository.findById(id);
+    if (!resume) {
       throw new NotFoundException(`Resume with id ${id} not found`);
     }
-
-    if (exist.userId !== userId) {
+    if (resume.userId !== userId) {
       throw new ForbiddenException(
-        'You do not have permission to delete this resume',
+        'You do not have permission to access this resume',
       );
     }
-
-    return this.resumeRepository.delete(id);
+    return resume;
   }
 }

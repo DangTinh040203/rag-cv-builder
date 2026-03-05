@@ -60,7 +60,7 @@ export interface Language {
   resumeId: string;
 }
 
-export interface Resume {
+export class Resume {
   id: string;
   userId: string;
 
@@ -79,4 +79,16 @@ export interface Resume {
 
   createdAt: Date;
   updatedAt: Date;
+
+  constructor(partial: Partial<Resume>) {
+    Object.assign(this, partial);
+  }
+
+  get hasExperience(): boolean {
+    return this.workExperiences && this.workExperiences.length > 0;
+  }
+
+  get totalProjects(): number {
+    return this.projects ? this.projects.length : 0;
+  }
 }

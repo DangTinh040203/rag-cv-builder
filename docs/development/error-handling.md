@@ -139,17 +139,23 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
 ### Registering the Filter
 
+We register the global filter using the `APP_FILTER` provider in the root module (or a dedicated core module) rather than instantiating it manually in `main.ts`. This allows the filter to inject other dependencies (like `ConfigService`) via Dependency Injection.
+
 ```typescript
-// src/main.ts
+// src/app/app.module.ts
+import { Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from '@/libs/filters/http-exception.filter';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  app.useGlobalFilters(new HttpExceptionFilter());
-
-  await app.listen(3000);
-}
+@Module({
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ],
+})
+export class AppModule {}
 ```
 
 ## Error Response Format

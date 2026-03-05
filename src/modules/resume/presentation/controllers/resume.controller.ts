@@ -7,26 +7,34 @@ import {
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
+  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
-import { CurrentDbUser, Public } from '@/libs/decorators';
-import { ResumeService } from '@/modules/resume/application/services';
+import { CurrentDbUser } from '@/libs/decorators';
+import {
+  ResumeMatchingService,
+  ResumeParserService,
+  ResumeService,
+} from '@/modules/resume/application/services';
 import {
   MatchResumeDto,
   UpdateResumeDto,
 } from '@/modules/resume/presentation/DTOs';
 import { ParseJdInterceptor } from '@/modules/resume/presentation/interceptors/parse-jd.interceptor';
-import { type User } from '@/modules/user/domain';
+import { User } from '@/modules/user/domain';
 
 @Controller('resumes')
 export class ResumeController {
-  constructor(private readonly resumeService: ResumeService) {}
+  constructor(
+    private readonly resumeService: ResumeService,
+    private readonly resumeParserService: ResumeParserService,
+    private readonly resumeMatchingService: ResumeMatchingService,
+  ) {}
 
-  @Public()
   @UseInterceptors(FileInterceptor('file'))
   @Post('/parse')
   async parse(
@@ -40,13 +48,13 @@ export class ResumeController {
     )
     file: Express.Multer.File,
   ) {
-    return this.resumeService.resumeParser(file);
+    return this.resumeParserService.parse(file);
   }
 
   @UseInterceptors(FileInterceptor('file'), ParseJdInterceptor)
   @Post('/match')
   async match(@Body() payload: MatchResumeDto, @CurrentDbUser() user: User) {
-    return this.resumeService.matchResume(
+    return this.resumeMatchingService.match(
       payload.resumeId,
       payload.jobDescription,
       user.id,
@@ -63,7 +71,7 @@ export class ResumeController {
     return this.resumeService.findById(id, user.id);
   }
 
-  @Post('/:id')
+  @Patch('/:id')
   async update(
     @Param('id') id: string,
     @Body() payload: UpdateResumeDto,

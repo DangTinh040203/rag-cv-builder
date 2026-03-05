@@ -1,15 +1,15 @@
-import { type Resume } from '@/modules/resume/domain';
 import {
-  type CreateResumeDto,
-  type UpdateResumeDto,
-} from '@/modules/resume/presentation/DTOs';
+  type CreateResumeCommand,
+  type UpdateResumeCommand,
+} from '@/modules/resume/application/commands';
+import { type Resume } from '@/modules/resume/domain';
 
-export const RESUME_REPOSITORY_TOKEN = 'RESUME_REPOSITORY_TOKEN';
+export const RESUME_REPOSITORY_TOKEN = Symbol('RESUME_REPOSITORY_TOKEN');
 
 export interface IResumeRepository {
-  create(userId: string, payload: CreateResumeDto): Promise<Resume>;
+  create(userId: string, payload: CreateResumeCommand): Promise<Resume>;
   findById(id: string): Promise<Resume | null>;
   findByUserId(userId: string): Promise<Resume | null>;
-  update(id: string, payload: UpdateResumeDto): Promise<Resume>;
+  update(id: string, payload: UpdateResumeCommand): Promise<Resume>;
   delete(id: string): Promise<void>;
 }

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '@/libs/databases/prisma.service';
-import { IResumeRepository } from '@/modules/resume/application/interfaces';
-import { type Resume } from '@/modules/resume/domain';
 import {
-  type CreateResumeDto,
-  type UpdateResumeDto,
-} from '@/modules/resume/presentation/DTOs';
+  type CreateResumeCommand,
+  type UpdateResumeCommand,
+} from '@/modules/resume/application/commands';
+import { IResumeRepository } from '@/modules/resume/application/interfaces';
+import { Resume } from '@/modules/resume/domain';
 
 const resumeInclude = {
   information: true,
@@ -24,16 +24,17 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByUserId(userId: string): Promise<Resume | null> {
-    return this.prisma.resume.findUnique({
+    const resume = await this.prisma.resume.findUnique({
       where: {
         userId,
       },
       include: resumeInclude,
     });
+    return resume ? new Resume(resume) : null;
   }
 
-  async create(userId: string, payload: CreateResumeDto): Promise<Resume> {
-    return this.prisma.resume.create({
+  async create(userId: string, payload: CreateResumeCommand): Promise<Resume> {
+    const resume = await this.prisma.resume.create({
       data: {
         title: payload.title,
         subTitle: payload.subTitle,
@@ -64,19 +65,21 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
       },
       include: resumeInclude,
     });
+    return new Resume(resume);
   }
 
   async findById(id: string): Promise<Resume | null> {
-    return this.prisma.resume.findUnique({
+    const resume = await this.prisma.resume.findUnique({
       where: {
         id: id,
       },
       include: resumeInclude,
     });
+    return resume ? new Resume(resume) : null;
   }
 
-  async update(id: string, payload: UpdateResumeDto): Promise<Resume> {
-    return this.prisma.resume.update({
+  async update(id: string, payload: UpdateResumeCommand): Promise<Resume> {
+    const resume = await this.prisma.resume.update({
       where: {
         id: id,
       },
@@ -115,6 +118,7 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
       },
       include: resumeInclude,
     });
+    return new Resume(resume);
   }
 
   async delete(id: string): Promise<void> {

@@ -14,11 +14,10 @@ import morgan from 'morgan';
 import { AppModule } from '@/app/app.module';
 import { Env } from '@/libs/configs';
 import { loggerConfig } from '@/libs/configs/logger.config';
-import { GlobalExceptionFilter } from '@/libs/filters';
 import { formatError } from '@/libs/utils/formatError.util';
 
 class BootstrapApplication {
-  app: INestApplication;
+  private app: INestApplication;
   private configService: ConfigService;
 
   async run() {
@@ -57,8 +56,6 @@ class BootstrapApplication {
         },
       }),
     );
-
-    this.app.useGlobalFilters(new GlobalExceptionFilter());
 
     this.app.enableCors({
       origin: this.configService.getOrThrow<string>(Env.FRONTEND_ORIGIN),

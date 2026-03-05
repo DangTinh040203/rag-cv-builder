@@ -16,10 +16,7 @@ export class UserController {
   @UseGuards(ClerkWebhookGuard)
   @Post('clerk')
   async handleClerkWebhook(@Req() req: Request) {
-    this.logger.log(
-      'Clerk webhook received:',
-      req.clerkEvent?.data.backup_code_enabled,
-    );
+    this.logger.log(`Clerk webhook received: ${req.clerkEvent?.type}`);
     await this.clerkWebhookService.processWebhook(req.clerkEvent);
   }
 }

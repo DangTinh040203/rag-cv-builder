@@ -1,9 +1,6 @@
 import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
-import {
-  type IResumeRepository,
-  RESUME_REPOSITORY_TOKEN,
-} from '@/modules/resume/application/interfaces';
 import {
   type IClerkWebhookStrategy,
   type IUserRepository,
@@ -19,8 +16,7 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
     @Inject(USER_REPOSITORY_TOKEN)
     private readonly userRepository: IUserRepository,
 
-    @Inject(RESUME_REPOSITORY_TOKEN)
-    private readonly resumeRepository: IResumeRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   getType(): ClerkUserWebhook {
@@ -58,27 +54,7 @@ export class UserCreatedStrategy implements IClerkWebhookStrategy {
       providerId: data.id,
     });
 
-    await this.resumeRepository.create(newUser.id, {
-      title: 'Full Name',
-      subTitle: 'Fullstack Developer',
-      overview:
-        'Passionate software engineer with 5+ years of experience in building scalable web applications. Expert in React, Node.js, and cloud technologies. Proven track record of delivering high-quality code and leading development teams.',
-      avatar: data.image_url,
-      information: [
-        { label: 'Phone', value: '+1 (555) 123-4567' },
-        { label: 'Email', value: primaryEmail.email_address },
-        { label: 'Address', value: 'Ho Chi Minh City, Vietnam' },
-        { label: 'Website', value: 'https://example.com' },
-        { label: 'LinkedIn', value: 'https://linkedin.com/in/example' },
-        { label: 'GitHub', value: 'https://github.com/example' },
-      ],
-      educations: [],
-      workExperiences: [],
-      projects: [],
-      skills: [],
-      certifications: [],
-      languages: [],
-    });
+    this.eventEmitter.emit('user.created', newUser);
 
     this.logger.log(
       `User created successfully with email: ${primaryEmail.email_address}`,

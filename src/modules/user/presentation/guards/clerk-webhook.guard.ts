@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   Logger,
 } from '@nestjs/common';
@@ -30,7 +31,7 @@ export class ClerkWebhookGuard implements CanActivate {
       !svixHeaders['svix-signature']
     ) {
       this.logger.error('Missing svix headers');
-      return false;
+      throw new ForbiddenException('Missing required svix headers');
     }
 
     const wh = new Webhook(
@@ -45,7 +46,7 @@ export class ClerkWebhookGuard implements CanActivate {
       return true;
     } catch (err) {
       this.logger.error('Error verifying webhook:', err);
-      return false;
+      throw new ForbiddenException('Webhook verification failed');
     }
   }
 }

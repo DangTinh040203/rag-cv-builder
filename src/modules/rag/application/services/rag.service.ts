@@ -13,7 +13,7 @@ export class RagService {
     private readonly llmProvider: LLMProvider,
   ) {}
 
-  async sendMessage(content: string, schema?: Schema) {
+  async sendMessage(content: string, schema?: Schema): Promise<string> {
     return this.llmProvider.sendMessage(content, schema);
   }
 }

@@ -4,7 +4,6 @@ import {
   type Schema,
 } from '@google/genai';
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -19,15 +18,15 @@ export class GeminiAdapter implements LLMProvider {
   private readonly genAI: GoogleGenAI;
 
   constructor(
-    @Inject() private readonly configService: ConfigService,
-    @Inject() private readonly logger: Logger,
+    private readonly configService: ConfigService,
+    private readonly logger: Logger,
   ) {
     this.genAI = new GoogleGenAI({
       apiKey: this.configService.get<string>(Env.GEMINI_API_KEY),
     });
   }
 
-  async sendMessage(content: string, schema?: Schema) {
+  async sendMessage(content: string, schema?: Schema): Promise<string> {
     this.logger.log('[GeminiAdapter]: START');
     const startTime = Date.now();
 

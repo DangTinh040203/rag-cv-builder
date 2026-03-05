@@ -13,7 +13,7 @@ export const DEFAULT_CACHE_TTL = 5 * 60 * 1000;
 @Module({
   imports: [
     NestCacheModule.registerAsync({
-      useFactory: (configService: ConfigService): any => {
+      useFactory: (configService: ConfigService) => {
         const redisUrl = configService.getOrThrow<string>(Env.REDIS_URL);
         const namespace = configService.getOrThrow<string>(Env.REDIS_NAMESPACE);
 
