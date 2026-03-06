@@ -49,16 +49,23 @@ export class InterviewGateway
     // Socket.IO middleware runs BEFORE connection, blocking until auth completes.
     // This guarantees client.data.userId is set before handleConnection
     // and any @SubscribeMessage handler runs.
-    server.use(async (socket: Socket, next) => {
-      const userId = await this.wsAuthGuard.authenticate(socket);
+    server.use((socket: Socket, next) => {
+      this.wsAuthGuard
+        .authenticate(socket)
+        .then((userId) => {
+          if (!userId) {
+            next(new Error('Authentication failed'));
+            return;
+          }
 
-      if (!userId) {
-        next(new Error('Authentication failed'));
-        return;
-      }
-
-      socket.data.userId = userId;
-      next();
+          Object.assign(socket.data, { userId });
+          next();
+        })
+        .catch((err: unknown) => {
+          const error =
+            err instanceof Error ? err : new Error('Authentication failed');
+          next(error);
+        });
     });
   }
 
