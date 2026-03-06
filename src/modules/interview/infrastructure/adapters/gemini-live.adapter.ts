@@ -68,15 +68,28 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     this.sessions.set(sessionId, entry);
 
     try {
+      const connectConfig: Record<string, any> = {
+        responseModalities: [Modality.AUDIO],
+        systemInstruction: config.systemInstruction,
+        // Enable speech-to-text transcription for both directions
+        outputAudioTranscription: {},
+        inputAudioTranscription: {},
+      };
+
+      // Apply voice selection if specified
+      if (config.voiceName) {
+        connectConfig.speechConfig = {
+          voiceConfig: {
+            prebuiltVoiceConfig: {
+              voiceName: config.voiceName,
+            },
+          },
+        };
+      }
+
       const session = await this.genAI.live.connect({
         model: this.model,
-        config: {
-          responseModalities: [Modality.AUDIO],
-          systemInstruction: config.systemInstruction,
-          // Enable speech-to-text transcription for both directions
-          outputAudioTranscription: {},
-          inputAudioTranscription: {},
-        },
+        config: connectConfig,
         callbacks: {
           onopen: () => {
             this.logger.log(`Gemini Live session opened: ${sessionId}`);

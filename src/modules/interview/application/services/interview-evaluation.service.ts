@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 
 import {
+  EVALUATION_NOTES_WITH_TRANSCRIPT,
+  EVALUATION_NOTES_WITHOUT_TRANSCRIPT,
   EVALUATION_PROMPT,
   EVALUATION_SCHEMA,
 } from '@/modules/interview/application/constants/prompt.constant';
@@ -64,10 +66,8 @@ export class InterviewEvaluationService {
     // Build conversation transcript from actual turn history
     let interviewNotes: string;
 
-    console.log(
-      '🚀 ~ InterviewEvaluationService ~ buildEvaluationPrompt ~ session.conversationHistory:',
-      session.conversationHistory,
-    );
+    const duration = String(this.calculateDuration(session.startedAt));
+
     if (session.conversationHistory.length > 0) {
       const transcript = session.conversationHistory
         .map((turn) => {
@@ -77,28 +77,22 @@ export class InterviewEvaluationService {
         })
         .join('\n');
 
-      interviewNotes = `
-## Conversation Transcript:
-${transcript}
-
-## Summary:
-- Interview Type: ${session.interviewType}
-- Questions answered: ${session.questionsAsked} out of ${session.totalQuestions} planned.
-- Interview duration: ${this.calculateDuration(session.startedAt)} minutes.
-- Status: ${session.status}.
-
-Evaluate based on the actual conversation transcript above. The candidate's responses were given via voice audio — "[Audio response]" indicates where the candidate spoke. Use the interviewer's follow-up reactions and subsequent questions to infer the quality of each answer.
-      `.trim();
+      interviewNotes = EVALUATION_NOTES_WITH_TRANSCRIPT
+        .replace('{transcript}', transcript)
+        .replace('{interview_type}', session.interviewType)
+        .replace('{questions_asked}', String(session.questionsAsked))
+        .replace('{total_questions}', String(session.totalQuestions))
+        .replace('{duration}', duration)
+        .replace('{status}', session.status)
+        .trim();
     } else {
-      interviewNotes = `
-- Interview Type: ${session.interviewType}
-- Questions asked: ${session.questionsAsked} out of ${session.totalQuestions} planned.
-- Interview duration: ${this.calculateDuration(session.startedAt)} minutes.
-- Status: ${session.status}.
-- NOTE: No conversation transcript is available (audio-only session).
-  Provide a general assessment based on the interview configuration and candidate's profile.
-  For per-question feedback, generate typical questions that would be asked for this interview type and provide constructive feedback templates.
-      `.trim();
+      interviewNotes = EVALUATION_NOTES_WITHOUT_TRANSCRIPT
+        .replace('{interview_type}', session.interviewType)
+        .replace('{questions_asked}', String(session.questionsAsked))
+        .replace('{total_questions}', String(session.totalQuestions))
+        .replace('{duration}', duration)
+        .replace('{status}', session.status)
+        .trim();
     }
 
     return EVALUATION_PROMPT.replace('{interview_type}', session.interviewType)

@@ -5,6 +5,8 @@ export const LIVE_INTERVIEW_PROVIDER_TOKEN = Symbol(
 export interface LiveInterviewConfig {
   systemInstruction: string;
   responseModalities: string[];
+  voiceName?: string;
+  speechRate?: number;
 }
 
 export interface TurnCompleteData {

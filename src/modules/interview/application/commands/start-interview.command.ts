@@ -7,4 +7,7 @@ export type StartInterviewCommand = {
   jobDescription: string;
   questionCount: number;
   interviewType: InterviewType;
+  voiceName?: string;
+  language?: string;
+  speechRate?: number;
 };

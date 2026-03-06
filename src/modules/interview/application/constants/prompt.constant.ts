@@ -12,6 +12,7 @@ You are an experienced and professional interviewer conducting a mock interview 
 ## Interview Configuration:
 - Interview Type: {interview_type}
 - Total Questions to Ask: {total_questions}
+- Language: {language}
 
 ## Instructions:
 1. Start with a brief, friendly greeting and introduce yourself as the interviewer.
@@ -24,8 +25,9 @@ You are an experienced and professional interviewer conducting a mock interview 
 8. Keep track of your question count. You MUST ask exactly {total_questions} questions total.
 9. After the candidate answers the final question, thank them for their time and indicate the interview is now complete.
 10. Be professional, encouraging, and constructive throughout. Do not be overly harsh or overly lenient.
-11. Speak in the same language as the Job Description. If the JD is in Vietnamese, conduct the interview in Vietnamese. If in English, use English.
+11. You MUST speak in {language} throughout the entire interview. All your questions, acknowledgments, and closing remarks must be in {language}.
 12. Each of your turns should contain EXACTLY ONE question (except the greeting turn which may include the first question).
+{pace_instruction}
 `;
 
 export const EVALUATION_PROMPT = `
@@ -128,3 +130,49 @@ export const EVALUATION_SCHEMA: Schema = {
     'improvements',
   ],
 };
+
+// ─── Silence Timeout ──────────────────────────────────────
+
+/** How long (ms) to wait for user audio before nudging them */
+export const SILENCE_TIMEOUT_MS = 15_000;
+
+export const SILENCE_NUDGE_MESSAGE =
+  'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
+
+// ─── Pace Instructions ────────────────────────────────────
+
+export const PACE_INSTRUCTIONS: Record<string, string> = {
+  VERY_SLOW:
+    'Speak slowly and clearly, taking your time with each word. Use a relaxed, deliberate pace.',
+  SLOW:
+    'Speak at a slightly slower than normal pace for clarity.',
+  FAST:
+    'Speak at a brisk, energetic pace while remaining clear.',
+  VERY_FAST:
+    'Speak quickly and energetically, maintaining a fast pace throughout.',
+};
+
+// ─── Evaluation Interview Notes Templates ─────────────────
+
+export const EVALUATION_NOTES_WITH_TRANSCRIPT = `
+## Conversation Transcript:
+{transcript}
+
+## Summary:
+- Interview Type: {interview_type}
+- Questions answered: {questions_asked} out of {total_questions} planned.
+- Interview duration: {duration} minutes.
+- Status: {status}.
+
+Evaluate based on the actual conversation transcript above. The candidate's responses were given via voice audio — "[Audio response]" indicates where the candidate spoke. Use the interviewer's follow-up reactions and subsequent questions to infer the quality of each answer.
+`;
+
+export const EVALUATION_NOTES_WITHOUT_TRANSCRIPT = `
+- Interview Type: {interview_type}
+- Questions asked: {questions_asked} out of {total_questions} planned.
+- Interview duration: {duration} minutes.
+- Status: {status}.
+- NOTE: No conversation transcript is available (audio-only session).
+  Provide a general assessment based on the interview configuration and candidate's profile.
+  For per-question feedback, generate typical questions that would be asked for this interview type and provide constructive feedback templates.
+`;

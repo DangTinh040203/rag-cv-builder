@@ -2,19 +2,18 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 
 import { type StartInterviewCommand } from '@/modules/interview/application/commands';
-import { INTERVIEW_SYSTEM_PROMPT } from '@/modules/interview/application/constants/prompt.constant';
+import {
+  INTERVIEW_SYSTEM_PROMPT,
+  PACE_INSTRUCTIONS,
+  SILENCE_NUDGE_MESSAGE,
+  SILENCE_TIMEOUT_MS,
+} from '@/modules/interview/application/constants/prompt.constant';
 import {
   type ILiveInterviewProvider,
   type InterviewCallbacks,
   LIVE_INTERVIEW_PROVIDER_TOKEN,
 } from '@/modules/interview/application/interfaces';
 import { InterviewSession } from '@/modules/interview/domain';
-
-/** How long (ms) to wait for user audio before nudging them */
-const SILENCE_TIMEOUT_MS = 15_000;
-
-const SILENCE_NUDGE_MESSAGE =
-  'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
 
 @Injectable()
 export class InterviewService {
@@ -39,6 +38,8 @@ export class InterviewService {
       command.jobDescription,
       command.interviewType,
       command.questionCount,
+      command.language,
+      command.speechRate,
     );
 
     // Create session object first so callbacks can reference it
@@ -60,6 +61,8 @@ export class InterviewService {
       {
         systemInstruction: systemPrompt,
         responseModalities: ['AUDIO'],
+        voiceName: command.voiceName,
+        speechRate: command.speechRate,
       },
       {
         onAudioResponse: (audioData) => {
@@ -240,10 +243,29 @@ export class InterviewService {
     jobDescription: string,
     interviewType: string,
     totalQuestions: number,
+    language?: string,
+    speechRate?: number,
   ): string {
+    const lang = language || 'English';
+
+    let paceInstruction = '';
+    if (speechRate && speechRate !== 1.0) {
+      if (speechRate < 0.8) {
+        paceInstruction = PACE_INSTRUCTIONS.VERY_SLOW;
+      } else if (speechRate < 1.0) {
+        paceInstruction = PACE_INSTRUCTIONS.SLOW;
+      } else if (speechRate <= 1.3) {
+        paceInstruction = PACE_INSTRUCTIONS.FAST;
+      } else {
+        paceInstruction = PACE_INSTRUCTIONS.VERY_FAST;
+      }
+    }
+
     return INTERVIEW_SYSTEM_PROMPT.replace('{resume_json}', resumeJson)
       .replace('{jd_text}', jobDescription)
       .replace(/{interview_type}/g, interviewType)
-      .replace(/{total_questions}/g, String(totalQuestions));
+      .replace(/{total_questions}/g, String(totalQuestions))
+      .replace('{language}', lang)
+      .replace('{pace_instruction}', paceInstruction);
   }
 }

@@ -112,6 +112,9 @@ export class InterviewGateway
         jobDescription: dto.jobDescription,
         questionCount: dto.questionCount,
         interviewType: dto.interviewType,
+        voiceName: dto.voiceName,
+        language: dto.language,
+        speechRate: dto.speechRate,
       };
 
       const session = await this.interviewService.startInterview(command, {
