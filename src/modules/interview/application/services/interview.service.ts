@@ -315,12 +315,33 @@ export class InterviewService {
       }
     }
 
-    return INTERVIEW_SYSTEM_PROMPT.replace('{resume_json}', resumeJson)
-      .replace('{jd_text}', jobDescription)
+    return INTERVIEW_SYSTEM_PROMPT.replace(
+      '{resume_json}',
+      this.sanitizeUserContent(resumeJson),
+    )
+      .replace('{jd_text}', this.sanitizeUserContent(jobDescription))
       .replace(/{interview_type}/g, interviewType)
       .replace(/{total_questions}/g, String(totalQuestions))
       .replace('{language}', lang)
       .replace('{interviewer_name}', name)
       .replace('{pace_instruction}', paceInstruction);
+  }
+
+  /**
+   * Sanitize user-provided content (JD text, resume JSON) to mitigate
+   * prompt injection attacks.
+   *
+   * Strategy: wrap in clear data delimiters so the LLM treats
+   * the content as data rather than instructions.
+   */
+  private sanitizeUserContent(content: string): string {
+    // Strip common injection markers that try to break out of context
+    const cleaned = content
+      .replace(/\[SYSTEM(?:\s+INSTRUCTION)?]/gi, '[FILTERED]')
+      .replace(/\[INST]/gi, '[FILTERED]')
+      .replace(/<<\s*SYS\s*>>/gi, '<<FILTERED>>')
+      .replace(/<\/?system>/gi, '<FILTERED>');
+
+    return `"""\n${cleaned}\n"""`;
   }
 }
