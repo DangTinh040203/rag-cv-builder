@@ -16,6 +16,7 @@ This document describes the complete end-to-end flow of a mock interview session
 ```
 
 The backend does **not** process audio itself. It acts as a **real-time proxy** that:
+
 1. Authenticates the user
 2. Creates an in-memory session
 3. Connects to Gemini Live API
@@ -119,6 +120,7 @@ Browser                    InterviewGateway         InterviewService        Gemi
 ```
 
 **Audio format details:**
+
 - **Client → Server:** Base64-encoded 16-bit PCM, 16 kHz sample rate, mono channel
 - **Server → Gemini:** Same base64 string, sent via `sendRealtimeInput({ audio: { data, mimeType: 'audio/pcm;rate=16000' } })`
 - **Gemini → Server:** Base64 audio in `serverContent.modelTurn.parts[].inlineData.data`
@@ -131,6 +133,7 @@ Browser                    InterviewGateway         InterviewService        Gemi
 ### Phase 4: Interview Completion & Evaluation
 
 This phase is triggered either by:
+
 - **Auto-completion:** `InterviewService` detects `session.shouldEndInterview` (questionsAsked ≥ totalQuestions) after a `turnComplete` event
 - **Manual stop:** Client sends `interview:stop` event
 
@@ -169,6 +172,7 @@ Browser                    InterviewGateway        InterviewService    Interview
 ```
 
 **Evaluation details:**
+
 - Uses `RagService.sendMessage()` with `EVALUATION_SCHEMA` (Gemini structured output)
 - Weighted scoring: Technical (30%), Communication (25%), Problem-Solving (20%), Relevance (15%), Professionalism (10%)
 - Resume/JD are truncated to 2000/1500 chars to fit token limits
@@ -197,6 +201,7 @@ Browser                    InterviewGateway         InterviewService        Gemi
 ```
 
 **All resources are cleaned up:**
+
 - `InterviewGateway.clientSessions` (socketId → sessionId mapping)
 - `InterviewService.activeSessions` (sessionId → InterviewSession)
 - `GeminiLiveAdapter.sessions` (providerSessionId → GeminiLiveSessionEntry)
@@ -241,10 +246,10 @@ Browser                    InterviewGateway         InterviewService        Gemi
 
 Since this feature has **no database persistence**, all state lives in 3 `Map` instances:
 
-| Map | Location | Key | Value | Lifetime |
-| --- | -------- | --- | ----- | -------- |
-| `clientSessions` | `InterviewGateway` | Socket ID | Session ID | Socket connection |
-| `activeSessions` | `InterviewService` | Session ID | `InterviewSession` | Interview duration |
-| `sessions` | `GeminiLiveAdapter` | Provider Session ID | `GeminiLiveSessionEntry` | Gemini connection |
+| Map              | Location            | Key                 | Value                    | Lifetime           |
+| ---------------- | ------------------- | ------------------- | ------------------------ | ------------------ |
+| `clientSessions` | `InterviewGateway`  | Socket ID           | Session ID               | Socket connection  |
+| `activeSessions` | `InterviewService`  | Session ID          | `InterviewSession`       | Interview duration |
+| `sessions`       | `GeminiLiveAdapter` | Provider Session ID | `GeminiLiveSessionEntry` | Gemini connection  |
 
 All 3 maps are cleaned up when the interview ends or the client disconnects.
