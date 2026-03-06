@@ -4,6 +4,7 @@ import {
   MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
@@ -25,7 +26,7 @@ import { ResumeService } from '@/modules/resume/application/services/resume.serv
   },
 })
 export class InterviewGateway
-  implements OnGatewayConnection, OnGatewayDisconnect
+  implements OnGatewayConnection, OnGatewayDisconnect, OnGatewayInit
 {
   @WebSocketServer()
   server: Server;
@@ -44,17 +45,27 @@ export class InterviewGateway
 
   // ─── Lifecycle ──────────────────────────────────────────────
 
-  async handleConnection(client: Socket): Promise<void> {
-    const userId = await this.wsAuthGuard.authenticate(client);
+  afterInit(server: Server): void {
+    // Socket.IO middleware runs BEFORE connection, blocking until auth completes.
+    // This guarantees client.data.userId is set before handleConnection
+    // and any @SubscribeMessage handler runs.
+    server.use(async (socket: Socket, next) => {
+      const userId = await this.wsAuthGuard.authenticate(socket);
 
-    if (!userId) {
-      client.emit('interview:error', { message: 'Authentication failed' });
-      client.disconnect();
-      return;
-    }
+      if (!userId) {
+        next(new Error('Authentication failed'));
+        return;
+      }
 
-    Object.assign(client.data, { userId });
-    this.logger.log(`Client connected: ${client.id} (user: ${userId})`);
+      socket.data.userId = userId;
+      next();
+    });
+  }
+
+  handleConnection(client: Socket): void {
+    this.logger.log(
+      `Client connected: ${client.id} (user: ${client.data.userId})`,
+    );
   }
 
   async handleDisconnect(client: Socket): Promise<void> {
