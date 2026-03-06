@@ -77,8 +77,10 @@ export class InterviewEvaluationService {
         })
         .join('\n');
 
-      interviewNotes = EVALUATION_NOTES_WITH_TRANSCRIPT
-        .replace('{transcript}', transcript)
+      interviewNotes = EVALUATION_NOTES_WITH_TRANSCRIPT.replace(
+        '{transcript}',
+        transcript,
+      )
         .replace('{interview_type}', session.interviewType)
         .replace('{questions_asked}', String(session.questionsAsked))
         .replace('{total_questions}', String(session.totalQuestions))
@@ -86,8 +88,10 @@ export class InterviewEvaluationService {
         .replace('{status}', session.status)
         .trim();
     } else {
-      interviewNotes = EVALUATION_NOTES_WITHOUT_TRANSCRIPT
-        .replace('{interview_type}', session.interviewType)
+      interviewNotes = EVALUATION_NOTES_WITHOUT_TRANSCRIPT.replace(
+        '{interview_type}',
+        session.interviewType,
+      )
         .replace('{questions_asked}', String(session.questionsAsked))
         .replace('{total_questions}', String(session.totalQuestions))
         .replace('{duration}', duration)

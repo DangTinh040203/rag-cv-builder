@@ -7,7 +7,6 @@ import {
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
-  Patch,
   Post,
   UploadedFile,
   UseInterceptors,
