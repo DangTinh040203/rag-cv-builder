@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality } from '@google/genai';
+import { EndSensitivity, GoogleGenAI, Modality } from '@google/genai';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
@@ -79,8 +79,6 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       currentTurnText: '',
       currentOutputTranscript: '',
       currentInputTranscript: '',
-      // Register callbacks BEFORE opening WebSocket to avoid race condition
-      // (Gemini may start speaking immediately after connection opens)
       onAudioResponseCallback: callbacks?.onAudioResponse,
       onTurnCompleteCallback: callbacks?.onTurnComplete,
       onInterruptedCallback: callbacks?.onInterrupted,
@@ -97,9 +95,16 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       const connectConfig: Record<string, any> = {
         responseModalities: [Modality.AUDIO],
         systemInstruction: config.systemInstruction,
-        // Enable speech-to-text transcription for both directions
         outputAudioTranscription: {},
         inputAudioTranscription: {},
+        // Tune Gemini's Voice Activity Detection so it doesn't
+        // cut off users mid-sentence when they pause to think.
+        realtimeInputConfig: {
+          automaticActivityDetection: {
+            endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_LOW,
+            silenceDurationMs: 2000,
+          },
+        },
       };
 
       // Apply voice selection if specified
@@ -124,10 +129,6 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
             this.logger.log(`Gemini Live session opened: ${sessionId}`);
           },
           onmessage: (message: any) => {
-            const msgKeys = message ? Object.keys(message) : [];
-            this.logger.log(
-              `[onmessage] Gemini message received (session: ${sessionId}): keys=[${msgKeys.join(',')}]`,
-            );
             this.handleMessage(sessionId, message);
           },
           onerror: (error: any) => {
@@ -273,14 +274,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     const serverContent = message?.serverContent;
 
     if (!serverContent) {
-      // Log non-serverContent messages (e.g., toolCall, setupComplete)
-      const keys = message ? Object.keys(message) : [];
-      this.logger.log(
-        `[handleMessage] Non-serverContent message (session: ${sessionId}): keys=[${keys.join(',')}]`,
-      );
-
-      // When setupComplete is received, send a kickoff text to trigger Gemini
-      // to start speaking. Without this, the model just waits for audio input.
+      // Handle setupComplete — send kickoff to trigger AI greeting
       if (message?.setupComplete && !entry.setupCompleted && entry.session) {
         entry.setupCompleted = true;
 
@@ -353,26 +347,15 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
 
     // Handle input transcription (user speech → text)
     if (serverContent.inputTranscription?.text) {
-      const inputText = serverContent.inputTranscription.text;
-      entry.currentInputTranscript += inputText;
-      this.logger.log(
-        `[handleMessage] User said (session: ${sessionId}): "${inputText}"`,
-      );
-
-      // Notify that user is speaking — this resets the silence timer
-      // so hesitant/slow speakers don't get prematurely nudged.
+      entry.currentInputTranscript += serverContent.inputTranscription.text;
       entry.onUserSpeechDetectedCallback?.();
     }
 
-    // Process modelTurn parts: accumulate text and forward audio
     if (serverContent.modelTurn?.parts) {
       for (const part of serverContent.modelTurn.parts) {
-        // Accumulate text transcript for this turn
         if (part.text) {
           entry.currentTurnText += part.text;
         }
-
-        // Forward audio chunks
         if (part.inlineData?.data) {
           const audioBuffer = Buffer.from(part.inlineData.data, 'base64');
           entry.onAudioResponseCallback?.(audioBuffer);
@@ -380,19 +363,13 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       }
     }
 
-    // Handle turn completion
     if (serverContent.turnComplete) {
       entry.turnCount++;
 
-      // Prefer output transcription over modelTurn text parts
       const outputTranscript = entry.currentOutputTranscript.trim();
       const modelText = entry.currentTurnText.trim();
       const aiTranscript = outputTranscript || modelText || undefined;
-
-      // Capture what user said before this turn
       const inputTranscript = entry.currentInputTranscript.trim() || undefined;
-
-      // Check if this turn was a response to a silence nudge
       const isNudge = entry.pendingNudge;
       entry.pendingNudge = false;
 
@@ -420,11 +397,6 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
 
   // ─── Reconnection Logic ──────────────────────────────────
 
-  /**
-   * Attempt to reconnect a Gemini Live session that closed unexpectedly.
-   * Retries up to MAX_RECONNECT_ATTEMPTS times with exponential backoff.
-   * If all retries fail, notifies via onDisconnectedCallback.
-   */
   private async attemptReconnection(sessionId: string): Promise<void> {
     const entry = this.sessions.get(sessionId);
     if (!entry) return;

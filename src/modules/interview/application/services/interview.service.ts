@@ -47,7 +47,6 @@ export class InterviewService {
       command.voiceName,
     );
 
-    // Create session object first so callbacks can reference it
     const session = new InterviewSession({
       id: randomUUID(),
       userId: command.userId,
@@ -56,12 +55,10 @@ export class InterviewService {
       resumeJson: command.resumeJson,
       interviewType: command.interviewType,
       totalQuestions: command.questionCount,
-      providerSessionId: '', // Will be set after connect
+      providerSessionId: '',
     });
 
-    // Pass callbacks directly to connect() so they are registered
-    // BEFORE the WebSocket opens — this prevents the race condition
-    // where Gemini starts speaking immediately but callbacks aren't set yet.
+    // Register callbacks BEFORE WebSocket opens to avoid race conditions
     const providerSessionId = await this.liveProvider.connect(
       {
         systemInstruction: systemPrompt,
@@ -96,43 +93,51 @@ export class InterviewService {
             return;
           }
 
-          // Normal turn — check if this was a silence-skip before clearing
           const wasSkippedDueToSilence = this.nudgedSessions.has(session.id);
           this.nudgedSessions.delete(session.id);
 
-          // Turn 1 = greeting + Q1. No question has been ANSWERED yet.
-          // Each subsequent turn = user answered previous question + AI asks next.
-          // So: questionsAnswered = turnCount - 1
-          //
-          // Example with 5 questions:
-          //   Turn 1: greeting+Q1 → answered=0 → show Q1/5
-          //   Turn 2: ack+Q2     → answered=1 → show Q2/5
-          //   Turn 5: ack+Q5     → answered=4 → show Q5/5
-          //   Turn 6: closing    → answered=5 → end interview
+          // Turn 1 = greeting+Q1 (answered=0), Turn N>1 = user answered prev question
           const turnIndex = turnData?.turnIndex ?? 1;
 
           if (turnIndex > 1) {
-            session.incrementQuestionCount();
+            const userInput = turnData?.inputTranscript?.trim() || '';
+            const isRepeatOrClarify = this.isMetaRequest(userInput);
+            const hasUserInput = userInput.length > 0;
 
-            // Determine candidate's response content
-            let candidateContent: string;
-
-            if (wasSkippedDueToSilence && !turnData?.inputTranscript?.trim()) {
-              // Candidate was completely silent → question was skipped
-              candidateContent =
-                '[No response — candidate was silent, question skipped]';
+            if (isRepeatOrClarify) {
+              this.logger.log(
+                `Meta-request detected — not counting as answered (session: ${session.id}): "${userInput.substring(0, 100)}"`,
+              );
+              session.addTurn({
+                role: 'candidate',
+                content: `[Meta-request: ${userInput}]`,
+                timestamp: new Date(),
+              });
+            } else if (!hasUserInput && !wasSkippedDueToSilence) {
+              // No user speech detected and NOT a deliberate silence-skip.
+              // This is a spurious turn (echo/noise triggered Gemini's VAD).
+              this.logger.warn(
+                `Spurious turn with no user input — not counting (session: ${session.id})`,
+              );
             } else {
-              candidateContent =
-                turnData?.inputTranscript ||
-                '[Audio response - no transcript available]';
-            }
+              session.incrementQuestionCount();
 
-            // Record candidate's actual answer (transcribed from speech)
-            session.addTurn({
-              role: 'candidate',
-              content: candidateContent,
-              timestamp: new Date(),
-            });
+              let candidateContent: string;
+              if (wasSkippedDueToSilence && !hasUserInput) {
+                candidateContent =
+                  '[No response — candidate was silent, question skipped]';
+              } else {
+                candidateContent =
+                  turnData?.inputTranscript ||
+                  '[Audio response - no transcript available]';
+              }
+
+              session.addTurn({
+                role: 'candidate',
+                content: candidateContent,
+                timestamp: new Date(),
+              });
+            }
           }
 
           const currentQuestion = Math.min(
@@ -153,15 +158,9 @@ export class InterviewService {
             this.clearSilenceTimer(session.id);
             callbacks.onInterviewComplete();
           }
-          // NOTE: Silence timer is NOT started here.
-          // It is started when the client emits 'playback-complete'
-          // (i.e., after the user has finished hearing the question).
-          // This prevents the nudge from firing while audio is still playing.
+          // Silence timer starts on 'playback-complete' from client
         },
         onUserSpeechDetected: () => {
-          // User started speaking (or is still speaking) — reset the
-          // silence timer so hesitant/slow speakers aren't prematurely nudged.
-          // The timer restarts from scratch each time speech is detected.
           this.resetSilenceTimerOnSpeech(session);
         },
         onInterrupted: () => {
@@ -246,20 +245,13 @@ export class InterviewService {
     this.logger.log(`Interview cancelled: ${sessionId}`);
   }
 
-  /**
-   * Called when the client reports that AI audio playback has finished.
-   * This is the correct moment to start the silence timer, because
-   * the user has now fully heard the question.
-   */
+  /** Start silence timer after client finishes playing AI audio */
   handlePlaybackComplete(sessionId: string): void {
     const session = this.activeSessions.get(sessionId);
-    if (!session) return;
-
-    // Don't start timer if the interview is already over
-    if (session.shouldEndInterview) return;
+    if (!session || session.shouldEndInterview) return;
 
     this.logger.log(
-      `Client playback complete — starting silence timer (session: ${sessionId})`,
+      `Playback complete — starting silence timer (session: ${sessionId})`,
     );
     this.startSilenceTimer(session);
   }
@@ -283,9 +275,6 @@ export class InterviewService {
     this.clearSilenceTimer(session.id);
 
     const alreadyNudged = this.nudgedSessions.has(session.id);
-
-    // Use shorter timeout after nudge, longer initial timeout to
-    // give the candidate time to think before their first answer.
     const timeoutMs = alreadyNudged
       ? SILENCE_AFTER_NUDGE_TIMEOUT_MS
       : SILENCE_TIMEOUT_MS;
@@ -323,18 +312,9 @@ export class InterviewService {
     this.silenceTimers.set(session.id, timer);
   }
 
-  /**
-   * Reset the silence timer when user speech is detected.
-   * This prevents the nudge from firing while the user is actively
-   * speaking (even if hesitantly with pauses).
-   */
+  /** Reset silence timer when user speech is detected (prevents nudge while user is still talking) */
   private resetSilenceTimerOnSpeech(session: InterviewSession): void {
-    // Only reset if there is an active silence timer
     if (!this.silenceTimers.has(session.id)) return;
-
-    this.logger.debug(
-      `User speech detected — resetting silence timer (session: ${session.id})`,
-    );
     this.startSilenceTimer(session);
   }
 
@@ -345,6 +325,51 @@ export class InterviewService {
       clearTimeout(timer);
       this.silenceTimers.delete(sessionId);
     }
+  }
+
+  // ─── Meta-request Detection ─────────────────────────────
+
+  /** Detect repeat/clarify requests (don't count as answered questions) */
+  private isMetaRequest(input: string): boolean {
+    if (!input || input.trim().length === 0) return false;
+
+    const normalized = input.toLowerCase().trim();
+
+    // Very short inputs that are just meta-requests (< ~60 chars)
+    // If the user wrote a long answer AND asked to repeat, treat it as an answer.
+    if (normalized.length > 150) return false;
+
+    const patterns: RegExp[] = [
+      // English patterns
+      /\brepeat\b/,
+      /\bsay\s+(that\s+)?again\b/,
+      /\brephrase\b/,
+      /\bone\s+more\s+time\b/,
+      /\bonce\s+more\b/,
+      /\bcan\s+you\s+(repeat|say|ask)\b/,
+      /\bcould\s+you\s+(repeat|say|ask)\b/,
+      /\bwhat\s+(was|is)\s+the\s+question\b/,
+      /\bdidn'?t\s+(hear|catch|understand|get)\b/,
+      /\bcouldn'?t\s+(hear|catch|understand|get)\b/,
+      /\bsorry\s*[,.]?\s*(what|can|could|i\s+didn)\b/,
+      /\bcome\s+again\b/,
+      /\bpardon\b/,
+
+      // Vietnamese patterns
+      /nhắc\s*lại/,
+      /lặp\s*lại/,
+      /nói\s*lại/,
+      /đọc\s*lại/,
+      /hỏi\s*lại/,
+      /nghe\s*không\s*rõ/,
+      /không\s*nghe\s*(rõ|được|thấy)/,
+      /chưa\s*nghe/,
+      /câu\s*hỏi\s*(là\s*)?(gì|j)/,
+      /xin\s*lỗi.{0,20}(nhắc|lặp|nói|hỏi)\s*lại/,
+      /bạn\s*(có\s+thể\s+)?(nhắc|lặp|nói|hỏi)\s*lại/,
+    ];
+
+    return patterns.some((p) => p.test(normalized));
   }
 
   private buildSystemPrompt(
@@ -384,15 +409,8 @@ export class InterviewService {
       .replace('{pace_instruction}', paceInstruction);
   }
 
-  /**
-   * Sanitize user-provided content (JD text, resume JSON) to mitigate
-   * prompt injection attacks.
-   *
-   * Strategy: wrap in clear data delimiters so the LLM treats
-   * the content as data rather than instructions.
-   */
+  /** Sanitize user content to mitigate prompt injection */
   private sanitizeUserContent(content: string): string {
-    // Strip common injection markers that try to break out of context
     const cleaned = content
       .replace(/\[SYSTEM(?:\s+INSTRUCTION)?]/gi, '[FILTERED]')
       .replace(/\[INST]/gi, '[FILTERED]')
