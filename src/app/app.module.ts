@@ -11,6 +11,7 @@ import { AppConfigModule } from '@/libs/configs/config.module';
 import { DatabaseModule } from '@/libs/databases/database.module';
 import { GlobalExceptionFilter } from '@/libs/filters';
 import { ClerkAuthGuard } from '@/libs/guards';
+import { InterviewModule } from '@/modules/interview/interview.module';
 import { RagModule } from '@/modules/rag/rag.module';
 import { ResumeModule } from '@/modules/resume/resume.module';
 import { UserModule } from '@/modules/user/user.module';
@@ -20,6 +21,7 @@ import { UserModule } from '@/modules/user/user.module';
     UserModule,
     ResumeModule,
     RagModule,
+    InterviewModule,
     DatabaseModule,
     AppConfigModule,
     CacheModule,

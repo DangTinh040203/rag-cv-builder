@@ -13,3 +13,11 @@
   - [Environment Configuration](development/environment-configuration.md)
   - [Error Handling](development/error-handling.md)
   - [Git Hooks & Commits](development/git-hooks-commits.md)
+
+- **Features**
+  - **Mock Interview**
+    - [Overview](interview/README.md)
+    - [Module Structure](interview/module-structure.md)
+    - [Data Flow](interview/data-flow.md)
+    - [WebSocket Events API](interview/websocket-events.md)
+    - [Configuration](interview/configuration.md)

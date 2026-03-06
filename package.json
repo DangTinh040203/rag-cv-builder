@@ -45,8 +45,10 @@
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/microservices": "^11.1.12",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.16",
     "@nestjs/swagger": "^11.2.5",
     "@nestjs/throttler": "^6.5.0",
+    "@nestjs/websockets": "^11.1.16",
     "@prisma/adapter-pg": "^7.2.0",
     "@prisma/client": "^7.2.0",
     "@prisma/language-server": "^31.3.4",
@@ -69,6 +71,7 @@
     "pg": "^8.17.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "socket.io": "^4.8.3",
     "svix": "^1.84.1",
     "winston": "^3.19.0"
   },

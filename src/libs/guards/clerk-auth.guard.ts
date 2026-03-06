@@ -21,6 +21,11 @@ export class ClerkAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // Skip WS context — WebSocket auth is handled by the InterviewGateway
+    if (context.getType() === 'ws') {
+      return true;
+    }
+
     // Check if the route is marked as public
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),

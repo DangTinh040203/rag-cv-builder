@@ -71,7 +71,7 @@ export class ResumeController {
     return this.resumeService.findById(id, user.id);
   }
 
-  @Patch('/:id')
+  @Post('/:id')
   async update(
     @Param('id') id: string,
     @Body() payload: UpdateResumeDto,
