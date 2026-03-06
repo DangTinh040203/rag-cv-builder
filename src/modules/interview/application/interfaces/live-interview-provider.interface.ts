@@ -36,6 +36,11 @@ export interface ILiveInterviewProvider {
   sendAudio(sessionId: string, audioData: Buffer): void;
 
   /**
+   * Send a text message to the LLM (e.g. silence nudge).
+   */
+  sendText(sessionId: string, text: string): void;
+
+  /**
    * Register a callback to receive audio response chunks from the LLM.
    */
   onAudioResponse(

@@ -54,7 +54,9 @@ You are a Senior Interview Coach AI. Your task is to evaluate a mock interview s
 - Provide specific, actionable feedback.
 - Respond in the SAME LANGUAGE as the Job Description.
 - Be fair, balanced, and constructive.
-- Generate realistic question-answer scenarios based on the interview context for per-question feedback.
+- If a conversation transcript is provided, base your evaluation on the ACTUAL questions asked and the quality of answers inferred from the interviewer's reactions.
+- If no transcript is available, provide a general assessment based on the interview context with typical question examples.
+- For the questionFeedbacks array, use the ACTUAL interviewer questions from the transcript when available.
 `;
 
 export const EVALUATION_SCHEMA: Schema = {

@@ -61,13 +61,45 @@ export class InterviewEvaluationService {
         ? session.jobDescription.substring(0, MAX_CONTENT_LENGTH) + '...'
         : session.jobDescription;
 
-    const interviewNotes = `
-      The candidate completed a ${session.interviewType} mock interview.
-      - Questions asked: ${session.questionsAsked} out of ${session.totalQuestions} planned.
-      - Interview duration: ${this.calculateDuration(session.startedAt)} minutes.
-      - Status: ${session.status}.
-      Please provide a general evaluation based on the interview configuration and the candidate's profile.
-    `.trim();
+    // Build conversation transcript from actual turn history
+    let interviewNotes: string;
+
+    console.log(
+      '🚀 ~ InterviewEvaluationService ~ buildEvaluationPrompt ~ session.conversationHistory:',
+      session.conversationHistory,
+    );
+    if (session.conversationHistory.length > 0) {
+      const transcript = session.conversationHistory
+        .map((turn) => {
+          const role =
+            turn.role === 'interviewer' ? 'Interviewer' : 'Candidate';
+          return `${role}: ${turn.content}`;
+        })
+        .join('\n');
+
+      interviewNotes = `
+## Conversation Transcript:
+${transcript}
+
+## Summary:
+- Interview Type: ${session.interviewType}
+- Questions answered: ${session.questionsAsked} out of ${session.totalQuestions} planned.
+- Interview duration: ${this.calculateDuration(session.startedAt)} minutes.
+- Status: ${session.status}.
+
+Evaluate based on the actual conversation transcript above. The candidate's responses were given via voice audio — "[Audio response]" indicates where the candidate spoke. Use the interviewer's follow-up reactions and subsequent questions to infer the quality of each answer.
+      `.trim();
+    } else {
+      interviewNotes = `
+- Interview Type: ${session.interviewType}
+- Questions asked: ${session.questionsAsked} out of ${session.totalQuestions} planned.
+- Interview duration: ${this.calculateDuration(session.startedAt)} minutes.
+- Status: ${session.status}.
+- NOTE: No conversation transcript is available (audio-only session).
+  Provide a general assessment based on the interview configuration and candidate's profile.
+  For per-question feedback, generate typical questions that would be asked for this interview type and provide constructive feedback templates.
+      `.trim();
+    }
 
     return EVALUATION_PROMPT.replace('{interview_type}', session.interviewType)
       .replace('{total_questions}', String(session.questionsAsked))

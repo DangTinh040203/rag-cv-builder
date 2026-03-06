@@ -18,6 +18,8 @@ interface GeminiLiveSessionEntry {
   onInterruptedCallback?: () => void;
   turnCount: number;
   setupCompleted: boolean;
+  /** Accumulates text from current turn's modelTurn parts (for transcript) */
+  currentTurnText: string;
 }
 
 @Injectable()
@@ -49,6 +51,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       session: null,
       turnCount: 0,
       setupCompleted: false,
+      currentTurnText: '',
       // Register callbacks BEFORE opening WebSocket to avoid race condition
       // (Gemini may start speaking immediately after connection opens)
       onAudioResponseCallback: callbacks?.onAudioResponse,
@@ -118,6 +121,28 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
         data: audioData.toString('base64'),
         mimeType: 'audio/pcm;rate=16000',
       },
+    });
+  }
+
+  sendText(sessionId: string, text: string): void {
+    const entry = this.sessions.get(sessionId);
+
+    if (!entry?.session) {
+      this.logger.warn(`Cannot send text — session not found: ${sessionId}`);
+      return;
+    }
+
+    this.logger.log(
+      `Sending text to Gemini (session: ${sessionId}): "${text.substring(0, 100)}"`,
+    );
+
+    entry.session.sendClientContent({
+      turns: [
+        {
+          role: 'user',
+          parts: [{ text }],
+        },
+      ],
     });
   }
 
@@ -213,32 +238,25 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       return;
     }
 
-    // Log text content if present (for debugging)
-    if (serverContent.modelTurn?.parts) {
-      for (const part of serverContent.modelTurn.parts) {
-        if (part.text) {
-          this.logger.log(
-            `[handleMessage] Text response (session: ${sessionId}): "${part.text.substring(0, 200)}"`,
-          );
-        }
-      }
-    }
-
     // Handle interruption
     if (serverContent.interrupted) {
       this.logger.log(`[handleMessage] Interrupted (session: ${sessionId})`);
+      entry.currentTurnText = '';
       entry.onInterruptedCallback?.();
       return;
     }
 
-    // Handle audio response chunks
+    // Process modelTurn parts: accumulate text and forward audio
     if (serverContent.modelTurn?.parts) {
       for (const part of serverContent.modelTurn.parts) {
+        // Accumulate text transcript for this turn
+        if (part.text) {
+          entry.currentTurnText += part.text;
+        }
+
+        // Forward audio chunks
         if (part.inlineData?.data) {
           const audioBuffer = Buffer.from(part.inlineData.data, 'base64');
-          this.logger.log(
-            `[handleMessage] Audio chunk (session: ${sessionId}): ${audioBuffer.length} bytes, hasCallback=${!!entry.onAudioResponseCallback}`,
-          );
           entry.onAudioResponseCallback?.(audioBuffer);
         }
       }
@@ -247,12 +265,18 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     // Handle turn completion
     if (serverContent.turnComplete) {
       entry.turnCount++;
+      const transcript = entry.currentTurnText.trim();
       this.logger.log(
-        `[handleMessage] Turn complete (session: ${sessionId}): turn #${entry.turnCount}`,
+        `[handleMessage] Turn #${entry.turnCount} complete (session: ${sessionId})${transcript ? `: "${transcript.substring(0, 200)}"` : ''}`,
       );
+
       entry.onTurnCompleteCallback?.({
         turnIndex: entry.turnCount,
+        textTranscript: transcript || undefined,
       });
+
+      // Reset for next turn
+      entry.currentTurnText = '';
     }
   }
 }

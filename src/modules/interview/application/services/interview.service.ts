@@ -10,10 +10,18 @@ import {
 } from '@/modules/interview/application/interfaces';
 import { InterviewSession } from '@/modules/interview/domain';
 
+/** How long (ms) to wait for user audio before nudging them */
+const SILENCE_TIMEOUT_MS = 15_000;
+
+const SILENCE_NUDGE_MESSAGE =
+  'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
+
 @Injectable()
 export class InterviewService {
   private readonly logger = new Logger(InterviewService.name);
   private readonly activeSessions = new Map<string, InterviewSession>();
+  /** Silence timers keyed by interview session ID */
+  private readonly silenceTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(
     @Inject(LIVE_INTERVIEW_PROVIDER_TOKEN)
@@ -57,22 +65,63 @@ export class InterviewService {
         onAudioResponse: (audioData) => {
           callbacks.onAudioResponse(audioData);
         },
-        onTurnComplete: () => {
-          session.incrementQuestionCount();
+        onTurnComplete: (turnData) => {
+          // Record AI's transcript if available
+          if (turnData?.textTranscript) {
+            session.addTurn({
+              role: 'interviewer',
+              content: turnData.textTranscript,
+              timestamp: new Date(),
+            });
+          }
+
+          // Turn 1 = greeting + Q1. No question has been ANSWERED yet.
+          // Each subsequent turn = user answered previous question + AI asks next.
+          // So: questionsAnswered = turnCount - 1
+          //
+          // Example with 5 questions:
+          //   Turn 1: greeting+Q1 → answered=0 → show Q1/5
+          //   Turn 2: ack+Q2     → answered=1 → show Q2/5
+          //   Turn 5: ack+Q5     → answered=4 → show Q5/5
+          //   Turn 6: closing    → answered=5 → end interview
+          const turnIndex = turnData?.turnIndex ?? 1;
+
+          if (turnIndex > 1) {
+            session.incrementQuestionCount();
+
+            // Also add a placeholder for candidate's answer
+            session.addTurn({
+              role: 'candidate',
+              content: '[Audio response]',
+              timestamp: new Date(),
+            });
+          }
+
+          const currentQuestion = Math.min(
+            session.questionsAsked + 1,
+            session.totalQuestions,
+          );
+
+          this.logger.log(
+            `Turn #${turnIndex} complete: ${session.questionsAsked}/${session.totalQuestions} answered (session: ${session.id})`,
+          );
 
           callbacks.onTurnComplete({
-            questionNumber: session.questionsAsked,
+            questionNumber: currentQuestion,
             totalQuestions: session.totalQuestions,
           });
 
           if (session.shouldEndInterview) {
-            this.logger.log(
-              `Interview auto-complete triggered: ${session.id}`,
-            );
+            this.clearSilenceTimer(session.id);
             callbacks.onInterviewComplete();
+          } else {
+            // Start silence timer — if user doesn't speak within 15s,
+            // nudge Gemini to prompt or move on.
+            this.startSilenceTimer(session);
           }
         },
         onInterrupted: () => {
+          this.clearSilenceTimer(session.id);
           callbacks.onInterrupted();
         },
       },
@@ -107,6 +156,7 @@ export class InterviewService {
       return null;
     }
 
+    this.clearSilenceTimer(sessionId);
     session.complete();
 
     if (session.providerSessionId) {
@@ -127,6 +177,7 @@ export class InterviewService {
 
     if (!session) return;
 
+    this.clearSilenceTimer(sessionId);
     session.cancel();
 
     if (session.providerSessionId) {
@@ -151,6 +202,38 @@ export class InterviewService {
     return undefined;
   }
 
+  // ─── Silence Timer ──────────────────────────────────────
+
+  private startSilenceTimer(session: InterviewSession): void {
+    this.clearSilenceTimer(session.id);
+
+    const timer = setTimeout(() => {
+      this.silenceTimers.delete(session.id);
+
+      if (!session.providerSessionId) return;
+
+      this.logger.log(
+        `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — nudging Gemini (session: ${session.id})`,
+      );
+
+      this.liveProvider.sendText(
+        session.providerSessionId,
+        SILENCE_NUDGE_MESSAGE,
+      );
+    }, SILENCE_TIMEOUT_MS);
+
+    this.silenceTimers.set(session.id, timer);
+  }
+
+  private clearSilenceTimer(sessionId: string): void {
+    const timer = this.silenceTimers.get(sessionId);
+
+    if (timer) {
+      clearTimeout(timer);
+      this.silenceTimers.delete(sessionId);
+    }
+  }
+
   private buildSystemPrompt(
     resumeJson: string,
     jobDescription: string,
@@ -162,5 +245,4 @@ export class InterviewService {
       .replace(/{interview_type}/g, interviewType)
       .replace(/{total_questions}/g, String(totalQuestions));
   }
-
 }
