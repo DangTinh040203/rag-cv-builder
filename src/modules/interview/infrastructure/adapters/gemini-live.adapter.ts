@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
 
 import { Env } from '@/libs/configs';
+import { INTERVIEW_KICKOFF_MESSAGE } from '@/modules/interview/application/constants/prompt.constant';
 import {
   type ILiveInterviewProvider,
   type LiveInterviewConfig,
@@ -18,6 +19,8 @@ interface GeminiLiveSessionEntry {
   onInterruptedCallback?: () => void;
   turnCount: number;
   setupCompleted: boolean;
+  /** Voice name used as the interviewer's display name */
+  voiceName: string;
   /** Accumulates text from current turn's modelTurn parts (for transcript) */
   currentTurnText: string;
   /** Accumulates output transcription text (AI speech → text) */
@@ -55,6 +58,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       session: null,
       turnCount: 0,
       setupCompleted: false,
+      voiceName: config.voiceName || 'the interviewer',
       currentTurnText: '',
       currentOutputTranscript: '',
       currentInputTranscript: '',
@@ -238,15 +242,15 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
           `[handleMessage] Setup complete — sending kickoff message (session: ${sessionId})`,
         );
         try {
+          const kickoffText = INTERVIEW_KICKOFF_MESSAGE.replace(
+            '{interviewer_name}',
+            entry.voiceName,
+          );
           entry.session.sendClientContent({
             turns: [
               {
                 role: 'user',
-                parts: [
-                  {
-                    text: 'Please begin the interview now. Greet the candidate warmly and ask your first question.',
-                  },
-                ],
+                parts: [{ text: kickoffText }],
               },
             ],
           });
@@ -314,9 +318,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
 
       this.logger.log(
         `[handleMessage] Turn #${entry.turnCount} complete (session: ${sessionId})` +
-          (aiTranscript
-            ? `\n  AI: "${aiTranscript.substring(0, 300)}"`
-            : '') +
+          (aiTranscript ? `\n  AI: "${aiTranscript.substring(0, 300)}"` : '') +
           (inputTranscript
             ? `\n  User: "${inputTranscript.substring(0, 300)}"`
             : ''),

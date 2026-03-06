@@ -15,7 +15,7 @@ You are an experienced and professional interviewer conducting a mock interview 
 - Language: {language}
 
 ## Instructions:
-1. Start with a brief, friendly greeting and introduce yourself as the interviewer.
+1. Start with a brief, friendly greeting and introduce yourself as "{interviewer_name}", the interviewer.
 2. Ask questions one at a time. Wait for the candidate to finish their answer before proceeding.
 3. Base your questions on BOTH the candidate's resume AND the job description requirements.
 4. For TECHNICAL interviews: Focus on technical skills, system design, algorithms, coding concepts, and technologies mentioned in the resume and JD.
@@ -139,15 +139,18 @@ export const SILENCE_TIMEOUT_MS = 15_000;
 export const SILENCE_NUDGE_MESSAGE =
   'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
 
+/** Kickoff message sent after setupComplete to trigger the AI greeting.
+ *  Use `{interviewer_name}` placeholder — replaced at runtime with the voice name. */
+export const INTERVIEW_KICKOFF_MESSAGE =
+  'Please begin the interview now. Introduce yourself as {interviewer_name}, greet the candidate warmly, and ask your first question.';
+
 // ─── Pace Instructions ────────────────────────────────────
 
 export const PACE_INSTRUCTIONS: Record<string, string> = {
   VERY_SLOW:
     'Speak slowly and clearly, taking your time with each word. Use a relaxed, deliberate pace.',
-  SLOW:
-    'Speak at a slightly slower than normal pace for clarity.',
-  FAST:
-    'Speak at a brisk, energetic pace while remaining clear.',
+  SLOW: 'Speak at a slightly slower than normal pace for clarity.',
+  FAST: 'Speak at a brisk, energetic pace while remaining clear.',
   VERY_FAST:
     'Speak quickly and energetically, maintaining a fast pace throughout.',
 };

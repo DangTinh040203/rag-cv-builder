@@ -40,6 +40,7 @@ export class InterviewService {
       command.questionCount,
       command.language,
       command.speechRate,
+      command.voiceName,
     );
 
     // Create session object first so callbacks can reference it
@@ -245,8 +246,10 @@ export class InterviewService {
     totalQuestions: number,
     language?: string,
     speechRate?: number,
+    voiceName?: string,
   ): string {
     const lang = language || 'English';
+    const name = voiceName || 'the interviewer';
 
     let paceInstruction = '';
     if (speechRate && speechRate !== 1.0) {
@@ -266,6 +269,7 @@ export class InterviewService {
       .replace(/{interview_type}/g, interviewType)
       .replace(/{total_questions}/g, String(totalQuestions))
       .replace('{language}', lang)
+      .replace('{interviewer_name}', name)
       .replace('{pace_instruction}', paceInstruction);
   }
 }
