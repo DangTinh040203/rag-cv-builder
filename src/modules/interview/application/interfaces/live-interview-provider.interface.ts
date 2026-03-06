@@ -15,6 +15,8 @@ export interface TurnCompleteData {
   textTranscript?: string;
   /** User speech transcribed to text */
   inputTranscript?: string;
+  /** Whether this turn was a nudge response (not a real question) */
+  isNudge?: boolean;
 }
 
 export interface LiveSessionCallbacks {

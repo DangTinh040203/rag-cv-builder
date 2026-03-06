@@ -21,6 +21,8 @@ interface GeminiLiveSessionEntry {
   setupCompleted: boolean;
   /** Voice name used as the interviewer's display name */
   voiceName: string;
+  /** True when a silence nudge was sent and we're waiting for Gemini's nudge response */
+  pendingNudge: boolean;
   /** Accumulates text from current turn's modelTurn parts (for transcript) */
   currentTurnText: string;
   /** Accumulates output transcription text (AI speech → text) */
@@ -59,6 +61,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       turnCount: 0,
       setupCompleted: false,
       voiceName: config.voiceName || 'the interviewer',
+      pendingNudge: false,
       currentTurnText: '',
       currentOutputTranscript: '',
       currentInputTranscript: '',
@@ -161,6 +164,9 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     this.logger.log(
       `Sending text to Gemini (session: ${sessionId}): "${text.substring(0, 100)}"`,
     );
+
+    // Mark as pending nudge so the next turnComplete knows it's a nudge response
+    entry.pendingNudge = true;
 
     entry.session.sendClientContent({
       turns: [
@@ -316,8 +322,12 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       // Capture what user said before this turn
       const inputTranscript = entry.currentInputTranscript.trim() || undefined;
 
+      // Check if this turn was a response to a silence nudge
+      const isNudge = entry.pendingNudge;
+      entry.pendingNudge = false;
+
       this.logger.log(
-        `[handleMessage] Turn #${entry.turnCount} complete (session: ${sessionId})` +
+        `[handleMessage] Turn #${entry.turnCount} complete${isNudge ? ' (nudge)' : ''} (session: ${sessionId})` +
           (aiTranscript ? `\n  AI: "${aiTranscript.substring(0, 300)}"` : '') +
           (inputTranscript
             ? `\n  User: "${inputTranscript.substring(0, 300)}"`
@@ -328,6 +338,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
         turnIndex: entry.turnCount,
         textTranscript: aiTranscript,
         inputTranscript,
+        isNudge,
       });
 
       // Reset for next turn

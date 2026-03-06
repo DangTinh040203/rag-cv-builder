@@ -79,6 +79,16 @@ export class InterviewService {
             });
           }
 
+          // Nudge turns (silence reminders) should NOT count as questions.
+          // Also don't restart the silence timer after a nudge to prevent
+          // an infinite nudge loop.
+          if (turnData?.isNudge) {
+            this.logger.log(
+              `Nudge turn complete — not counting as question (session: ${session.id})`,
+            );
+            return;
+          }
+
           // Turn 1 = greeting + Q1. No question has been ANSWERED yet.
           // Each subsequent turn = user answered previous question + AI asks next.
           // So: questionsAnswered = turnCount - 1
