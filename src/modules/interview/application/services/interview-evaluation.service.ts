@@ -37,7 +37,15 @@ export class InterviewEvaluationService {
 
       return new InterviewFeedback({
         overallScore: parsed.overallScore,
+        verdict: parsed.verdict,
         summary: parsed.summary,
+        criteria: parsed.criteria ?? {
+          technicalKnowledge: 0,
+          communicationSkills: 0,
+          problemSolving: 0,
+          relevanceToRole: 0,
+          interviewConduct: 0,
+        },
         questionFeedbacks: parsed.questionFeedbacks ?? [],
         strengths: parsed.strengths ?? [],
         improvements: parsed.improvements ?? [],
@@ -63,9 +71,7 @@ export class InterviewEvaluationService {
         ? session.jobDescription.substring(0, MAX_CONTENT_LENGTH) + '...'
         : session.jobDescription;
 
-    // Build conversation transcript from actual turn history
     let interviewNotes: string;
-
     const duration = String(this.calculateDuration(session.startedAt));
 
     if (session.conversationHistory.length > 0) {
@@ -73,7 +79,15 @@ export class InterviewEvaluationService {
         .map((turn) => {
           const role =
             turn.role === 'interviewer' ? 'Interviewer' : 'Candidate';
-          return `${role}: ${turn.content}`;
+
+          // Append metadata for candidate turns
+          const meta: string[] = [];
+          if (turn.wasNudged) meta.push('Nudged');
+          if (turn.wasSkipped) meta.push('Skipped due to silence');
+          const metaSuffix =
+            meta.length > 0 ? ` [${meta.join(', ')}]` : '';
+
+          return `${role}: ${turn.content}${metaSuffix}`;
         })
         .join('\n');
 

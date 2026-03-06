@@ -123,9 +123,11 @@ export class InterviewService {
               session.incrementQuestionCount();
 
               let candidateContent: string;
+              let wasSkipped = false;
               if (wasSkippedDueToSilence && !hasUserInput) {
                 candidateContent =
                   '[No response — candidate was silent, question skipped]';
+                wasSkipped = true;
               } else {
                 candidateContent =
                   turnData?.inputTranscript ||
@@ -136,6 +138,8 @@ export class InterviewService {
                 role: 'candidate',
                 content: candidateContent,
                 timestamp: new Date(),
+                wasNudged: wasSkippedDueToSilence,
+                wasSkipped,
               });
             }
           }

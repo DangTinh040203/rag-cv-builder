@@ -5,6 +5,10 @@ export interface ConversationTurn {
   role: 'interviewer' | 'candidate';
   content: string;
   timestamp: Date;
+  /** Whether the candidate was nudged before answering this question */
+  wasNudged?: boolean;
+  /** Whether the candidate skipped this question (silence timeout) */
+  wasSkipped?: boolean;
 }
 
 export class InterviewSession {
