@@ -6,6 +6,7 @@ import {
   INTERVIEW_SYSTEM_PROMPT,
   PACE_INSTRUCTIONS,
   SILENCE_NUDGE_MESSAGE,
+  SILENCE_SKIP_MESSAGE,
   SILENCE_TIMEOUT_MS,
 } from '@/modules/interview/application/constants/prompt.constant';
 import {
@@ -21,6 +22,8 @@ export class InterviewService {
   private readonly activeSessions = new Map<string, InterviewSession>();
   /** Silence timers keyed by interview session ID */
   private readonly silenceTimers = new Map<string, NodeJS.Timeout>();
+  /** Sessions that have already been nudged once for the current question */
+  private readonly nudgedSessions = new Set<string>();
 
   constructor(
     @Inject(LIVE_INTERVIEW_PROVIDER_TOKEN)
@@ -80,14 +83,21 @@ export class InterviewService {
           }
 
           // Nudge turns (silence reminders) should NOT count as questions.
-          // Also don't restart the silence timer after a nudge to prevent
-          // an infinite nudge loop.
           if (turnData?.isNudge) {
             this.logger.log(
               `Nudge turn complete — not counting as question (session: ${session.id})`,
             );
+
+            // After the nudge, start a second silence timer.
+            // If the user stays silent again, the timer will fire the skip logic.
+            this.nudgedSessions.add(session.id);
+            this.startSilenceTimer(session);
             return;
           }
+
+          // Normal turn — check if this was a silence-skip before clearing
+          const wasSkippedDueToSilence = this.nudgedSessions.has(session.id);
+          this.nudgedSessions.delete(session.id);
 
           // Turn 1 = greeting + Q1. No question has been ANSWERED yet.
           // Each subsequent turn = user answered previous question + AI asks next.
@@ -103,11 +113,23 @@ export class InterviewService {
           if (turnIndex > 1) {
             session.incrementQuestionCount();
 
+            // Determine candidate's response content
+            let candidateContent: string;
+
+            if (wasSkippedDueToSilence && !turnData?.inputTranscript?.trim()) {
+              // Candidate was completely silent → question was skipped
+              candidateContent =
+                '[No response — candidate was silent, question skipped]';
+            } else {
+              candidateContent =
+                turnData?.inputTranscript ||
+                '[Audio response - no transcript available]';
+            }
+
             // Record candidate's actual answer (transcribed from speech)
             session.addTurn({
               role: 'candidate',
-              content:
-                turnData?.inputTranscript || '[Audio response - no transcript]',
+              content: candidateContent,
               timestamp: new Date(),
             });
           }
@@ -172,6 +194,7 @@ export class InterviewService {
     }
 
     this.clearSilenceTimer(sessionId);
+    this.nudgedSessions.delete(sessionId);
     session.complete();
 
     if (session.providerSessionId) {
@@ -193,6 +216,7 @@ export class InterviewService {
     if (!session) return;
 
     this.clearSilenceTimer(sessionId);
+    this.nudgedSessions.delete(sessionId);
     session.cancel();
 
     if (session.providerSessionId) {
@@ -222,19 +246,36 @@ export class InterviewService {
   private startSilenceTimer(session: InterviewSession): void {
     this.clearSilenceTimer(session.id);
 
+    const alreadyNudged = this.nudgedSessions.has(session.id);
+
     const timer = setTimeout(() => {
       this.silenceTimers.delete(session.id);
 
       if (!session.providerSessionId) return;
 
-      this.logger.log(
-        `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — nudging Gemini (session: ${session.id})`,
-      );
-
-      this.liveProvider.sendText(
-        session.providerSessionId,
-        SILENCE_NUDGE_MESSAGE,
-      );
+      if (alreadyNudged) {
+        // Already nudged once — skip to next question.
+        // NOT marked as nudge so the response counts as a normal turn.
+        this.logger.log(
+          `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — skipping to next question (session: ${session.id})`,
+        );
+        this.nudgedSessions.delete(session.id);
+        this.liveProvider.sendText(
+          session.providerSessionId,
+          SILENCE_SKIP_MESSAGE,
+        );
+      } else {
+        // First silence — gentle nudge.
+        // Marked as nudge so the response does NOT count as a question.
+        this.logger.log(
+          `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — nudging Gemini (session: ${session.id})`,
+        );
+        this.liveProvider.sendText(
+          session.providerSessionId,
+          SILENCE_NUDGE_MESSAGE,
+          true,
+        );
+      }
     }, SILENCE_TIMEOUT_MS);
 
     this.silenceTimers.set(session.id, timer);

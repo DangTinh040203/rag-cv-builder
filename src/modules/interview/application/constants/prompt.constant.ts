@@ -27,6 +27,12 @@ You are an experienced and professional interviewer conducting a mock interview 
 10. Be professional, encouraging, and constructive throughout. Do not be overly harsh or overly lenient.
 11. You MUST speak in {language} throughout the entire interview. All your questions, acknowledgments, and closing remarks must be in {language}.
 12. Each of your turns should contain EXACTLY ONE question (except the greeting turn which may include the first question).
+13. **Question Difficulty**: Carefully analyze the Job Description to identify the required seniority level (e.g., Junior, Mid-level, Senior, Staff, Lead, Principal, Architect, etc.). Calibrate ALL your questions to match that level:
+    - For **Junior/Entry-level**: Ask foundational concepts, basic coding, and simple scenario questions.
+    - For **Mid-level**: Ask about practical experience, design decisions, debugging, and moderate system design.
+    - For **Senior/Lead**: Ask deep architectural decisions, trade-off analysis, complex system design, leadership, mentoring, and cross-team collaboration.
+    - For **Staff/Principal/Architect**: Ask about large-scale system architecture, organizational impact, technical strategy, and advanced distributed systems.
+    If the JD does not specify a level, infer it from the required years of experience and responsibilities.
 {pace_instruction}
 `;
 
@@ -44,21 +50,49 @@ You are a Senior Interview Coach AI. Your task is to evaluate a mock interview s
 {interview_notes}
 
 ## Evaluation Criteria:
-1. **Technical Knowledge** (weight: 30%) — Depth and accuracy of technical answers, relevance to the role.
-2. **Communication Skills** (weight: 25%) — Clarity, structure, articulation of thoughts.
+1. **Technical Knowledge** (weight: 25%) — Depth and accuracy of technical answers, relevance to the role.
+2. **Communication Skills** (weight: 20%) — Clarity, structure, articulation of thoughts.
 3. **Problem-Solving Approach** (weight: 20%) — Analytical thinking, methodology, creativity.
 4. **Relevance to Role** (weight: 15%) — How well answers align with JD requirements.
-5. **Professionalism** (weight: 10%) — Confidence, composure, interview etiquette.
+5. **Interview Conduct & Etiquette** (weight: 20%) — Professionalism, composure, respect for the interviewer, NOT interrupting the interviewer mid-sentence, listening attentively, appropriate response timing.
+
+## STRICT Scoring Rules:
+
+### No-Response / Silence Handling:
+- If the transcript shows "[No response — candidate was silent, question skipped]" for a question, that question MUST receive a score of **0**.
+- If the candidate was silent for most questions, the overall score MUST be proportionally very low (close to 0).
+- A candidate who answers ZERO questions must receive an overall score of **0-5** maximum.
+- Do NOT give credit for "potential" or "resume qualifications" — only score what the candidate actually demonstrated IN the interview.
+
+### Interview Conduct Scoring:
+- If the transcript shows the interviewer was interrupted mid-sentence (the candidate spoke over the interviewer), deduct points from Interview Conduct.
+- Frequent interruptions: -20 to -40 points on Interview Conduct.
+- Not answering questions (staying silent): Interview Conduct score should be 10-20 at most.
+- Speaking respectfully, waiting for questions to finish, giving structured answers: high Interview Conduct score.
+
+### Score Range Guidelines:
+- **0-10**: No response given, or completely irrelevant/incoherent response.
+- **11-30**: Attempted but very weak answer, major gaps, mostly incorrect.
+- **31-50**: Partial answer with significant gaps, below expectations for the role level.
+- **51-70**: Acceptable answer but lacks depth or misses key points.
+- **71-85**: Good answer with solid understanding, minor improvements needed.
+- **86-100**: Excellent, comprehensive answer exceeding expectations.
+
+### Overall Score Calculation:
+- The overall score MUST be the weighted average of criterion scores.
+- If more than half the questions received a score of 0, the overall score cannot exceed 20.
+- Be STRICT and realistic. A real interviewer would not pass a candidate who doesn't answer questions.
 
 ## Rules:
 - Score each criterion from 0 to 100.
 - Calculate overall score as weighted average.
 - Provide specific, actionable feedback.
 - Respond in the SAME LANGUAGE as the Job Description.
-- Be fair, balanced, and constructive.
+- Be fair but STRICT — do not inflate scores to be "nice".
 - If a conversation transcript is provided, base your evaluation on the ACTUAL questions asked and the quality of answers inferred from the interviewer's reactions.
 - If no transcript is available, provide a general assessment based on the interview context with typical question examples.
 - For the questionFeedbacks array, use the ACTUAL interviewer questions from the transcript when available.
+- Mention specific moments of good or bad interview conduct in the feedback (e.g., interruptions, silence, structured responses).
 `;
 
 export const EVALUATION_SCHEMA: Schema = {
@@ -139,6 +173,9 @@ export const SILENCE_TIMEOUT_MS = 15_000;
 export const SILENCE_NUDGE_MESSAGE =
   'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
 
+export const SILENCE_SKIP_MESSAGE =
+  'The candidate is still not responding after the reminder. Politely acknowledge that they may need more time for this question, then move on to the next question. Say something like "No worries, let\'s move on to the next question." and ask the next question immediately.';
+
 /** Kickoff message sent after setupComplete to trigger the AI greeting.
  *  Use `{interviewer_name}` placeholder — replaced at runtime with the voice name. */
 export const INTERVIEW_KICKOFF_MESSAGE =
@@ -167,7 +204,10 @@ export const EVALUATION_NOTES_WITH_TRANSCRIPT = `
 - Interview duration: {duration} minutes.
 - Status: {status}.
 
-Evaluate based on the actual conversation transcript above. The candidate's responses were given via voice audio — "[Audio response]" indicates where the candidate spoke. Use the interviewer's follow-up reactions and subsequent questions to infer the quality of each answer.
+Evaluate based on the actual conversation transcript above. The candidate's responses were given via voice audio.
+- "[Audio response - no transcript available]" indicates the candidate spoke but their audio could not be transcribed — infer quality from the interviewer's reactions.
+- "[No response — candidate was silent, question skipped]" means the candidate did NOT answer at all and the question was skipped after a timeout. These MUST receive a score of 0.
+- If the interviewer's response suggests the candidate interrupted or spoke over them, factor that into the Interview Conduct score.
 `;
 
 export const EVALUATION_NOTES_WITHOUT_TRANSCRIPT = `

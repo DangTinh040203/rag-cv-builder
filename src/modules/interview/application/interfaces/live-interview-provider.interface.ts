@@ -44,8 +44,9 @@ export interface ILiveInterviewProvider {
 
   /**
    * Send a text message to the LLM (e.g. silence nudge).
+   * @param markAsNudge When true, the response turn will be flagged as a nudge (not counted as a question).
    */
-  sendText(sessionId: string, text: string): void;
+  sendText(sessionId: string, text: string, markAsNudge?: boolean): void;
 
   /**
    * Register a callback to receive audio response chunks from the LLM.

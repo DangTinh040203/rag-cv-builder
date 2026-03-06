@@ -153,7 +153,7 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     });
   }
 
-  sendText(sessionId: string, text: string): void {
+  sendText(sessionId: string, text: string, markAsNudge?: boolean): void {
     const entry = this.sessions.get(sessionId);
 
     if (!entry?.session) {
@@ -165,8 +165,9 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       `Sending text to Gemini (session: ${sessionId}): "${text.substring(0, 100)}"`,
     );
 
-    // Mark as pending nudge so the next turnComplete knows it's a nudge response
-    entry.pendingNudge = true;
+    // Only mark as pending nudge when explicitly requested,
+    // so the response turn is flagged appropriately.
+    entry.pendingNudge = markAsNudge ?? false;
 
     entry.session.sendClientContent({
       turns: [
