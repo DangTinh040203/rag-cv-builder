@@ -17,7 +17,7 @@ export class StartInterviewDto {
   jobDescription: string;
 
   @IsInt({ message: 'Question count must be an integer' })
-  @Min(5, { message: 'Minimum 5 questions' })
+  @Min(1, { message: 'Minimum 1 question' })
   @Max(10, { message: 'Maximum 10 questions' })
   questionCount: number;
 
