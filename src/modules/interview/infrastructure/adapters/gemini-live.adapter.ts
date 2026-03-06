@@ -20,6 +20,10 @@ interface GeminiLiveSessionEntry {
   setupCompleted: boolean;
   /** Accumulates text from current turn's modelTurn parts (for transcript) */
   currentTurnText: string;
+  /** Accumulates output transcription text (AI speech → text) */
+  currentOutputTranscript: string;
+  /** Accumulates input transcription text (user speech → text) */
+  currentInputTranscript: string;
 }
 
 @Injectable()
@@ -52,6 +56,8 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
       turnCount: 0,
       setupCompleted: false,
       currentTurnText: '',
+      currentOutputTranscript: '',
+      currentInputTranscript: '',
       // Register callbacks BEFORE opening WebSocket to avoid race condition
       // (Gemini may start speaking immediately after connection opens)
       onAudioResponseCallback: callbacks?.onAudioResponse,
@@ -67,6 +73,9 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
         config: {
           responseModalities: [Modality.AUDIO],
           systemInstruction: config.systemInstruction,
+          // Enable speech-to-text transcription for both directions
+          outputAudioTranscription: {},
+          inputAudioTranscription: {},
         },
         callbacks: {
           onopen: () => {
@@ -242,8 +251,24 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     if (serverContent.interrupted) {
       this.logger.log(`[handleMessage] Interrupted (session: ${sessionId})`);
       entry.currentTurnText = '';
+      entry.currentOutputTranscript = '';
+      entry.currentInputTranscript = '';
       entry.onInterruptedCallback?.();
       return;
+    }
+
+    // Handle output transcription (AI speech → text)
+    if (serverContent.outputTranscription?.text) {
+      entry.currentOutputTranscript += serverContent.outputTranscription.text;
+    }
+
+    // Handle input transcription (user speech → text)
+    if (serverContent.inputTranscription?.text) {
+      const inputText = serverContent.inputTranscription.text;
+      entry.currentInputTranscript += inputText;
+      this.logger.log(
+        `[handleMessage] User said (session: ${sessionId}): "${inputText}"`,
+      );
     }
 
     // Process modelTurn parts: accumulate text and forward audio
@@ -265,18 +290,35 @@ export class GeminiLiveAdapter implements ILiveInterviewProvider {
     // Handle turn completion
     if (serverContent.turnComplete) {
       entry.turnCount++;
-      const transcript = entry.currentTurnText.trim();
+
+      // Prefer output transcription over modelTurn text parts
+      const outputTranscript = entry.currentOutputTranscript.trim();
+      const modelText = entry.currentTurnText.trim();
+      const aiTranscript = outputTranscript || modelText || undefined;
+
+      // Capture what user said before this turn
+      const inputTranscript = entry.currentInputTranscript.trim() || undefined;
+
       this.logger.log(
-        `[handleMessage] Turn #${entry.turnCount} complete (session: ${sessionId})${transcript ? `: "${transcript.substring(0, 200)}"` : ''}`,
+        `[handleMessage] Turn #${entry.turnCount} complete (session: ${sessionId})` +
+          (aiTranscript
+            ? `\n  AI: "${aiTranscript.substring(0, 300)}"`
+            : '') +
+          (inputTranscript
+            ? `\n  User: "${inputTranscript.substring(0, 300)}"`
+            : ''),
       );
 
       entry.onTurnCompleteCallback?.({
         turnIndex: entry.turnCount,
-        textTranscript: transcript || undefined,
+        textTranscript: aiTranscript,
+        inputTranscript,
       });
 
       // Reset for next turn
       entry.currentTurnText = '';
+      entry.currentOutputTranscript = '';
+      entry.currentInputTranscript = '';
     }
   }
 }

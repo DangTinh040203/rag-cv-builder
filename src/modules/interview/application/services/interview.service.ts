@@ -89,10 +89,11 @@ export class InterviewService {
           if (turnIndex > 1) {
             session.incrementQuestionCount();
 
-            // Also add a placeholder for candidate's answer
+            // Record candidate's actual answer (transcribed from speech)
             session.addTurn({
               role: 'candidate',
-              content: '[Audio response]',
+              content:
+                turnData?.inputTranscript || '[Audio response - no transcript]',
               timestamp: new Date(),
             });
           }

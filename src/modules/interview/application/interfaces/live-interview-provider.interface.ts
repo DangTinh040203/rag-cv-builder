@@ -9,7 +9,10 @@ export interface LiveInterviewConfig {
 
 export interface TurnCompleteData {
   turnIndex: number;
+  /** AI speech transcribed to text */
   textTranscript?: string;
+  /** User speech transcribed to text */
+  inputTranscript?: string;
 }
 
 export interface LiveSessionCallbacks {
