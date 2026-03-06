@@ -142,6 +142,13 @@ export class InterviewGateway
         onInterviewComplete: () => {
           void this.handleInterviewComplete(client);
         },
+        onSessionError: (message) => {
+          this.logger.error(
+            `Interview session lost (client: ${client.id}): ${message}`,
+          );
+          this.clientSessions.delete(client.id);
+          client.emit('interview:session-lost', { message });
+        },
       });
 
       this.clientSessions.set(client.id, session.id);
@@ -173,6 +180,14 @@ export class InterviewGateway
       `Received audio from client ${client.id}: ${audioBuffer.length} bytes`,
     );
     this.interviewService.handleAudioInput(sessionId, audioBuffer);
+  }
+
+  @SubscribeMessage('interview:playback-complete')
+  handlePlaybackComplete(@ConnectedSocket() client: Socket): void {
+    const sessionId = this.clientSessions.get(client.id);
+    if (!sessionId) return;
+
+    this.interviewService.handlePlaybackComplete(sessionId);
   }
 
   @SubscribeMessage('interview:stop')

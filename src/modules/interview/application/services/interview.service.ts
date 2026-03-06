@@ -5,6 +5,7 @@ import { type StartInterviewCommand } from '@/modules/interview/application/comm
 import {
   INTERVIEW_SYSTEM_PROMPT,
   PACE_INSTRUCTIONS,
+  SILENCE_AFTER_NUDGE_TIMEOUT_MS,
   SILENCE_NUDGE_MESSAGE,
   SILENCE_SKIP_MESSAGE,
   SILENCE_TIMEOUT_MS,
@@ -88,10 +89,10 @@ export class InterviewService {
               `Nudge turn complete — not counting as question (session: ${session.id})`,
             );
 
-            // After the nudge, start a second silence timer.
-            // If the user stays silent again, the timer will fire the skip logic.
+            // Mark as nudged so the next silence timer will skip.
+            // Timer is NOT started here — it starts on 'playback-complete'
+            // when the client finishes playing the nudge audio.
             this.nudgedSessions.add(session.id);
-            this.startSilenceTimer(session);
             return;
           }
 
@@ -151,15 +152,32 @@ export class InterviewService {
           if (session.shouldEndInterview) {
             this.clearSilenceTimer(session.id);
             callbacks.onInterviewComplete();
-          } else {
-            // Start silence timer — if user doesn't speak within 15s,
-            // nudge Gemini to prompt or move on.
-            this.startSilenceTimer(session);
           }
+          // NOTE: Silence timer is NOT started here.
+          // It is started when the client emits 'playback-complete'
+          // (i.e., after the user has finished hearing the question).
+          // This prevents the nudge from firing while audio is still playing.
+        },
+        onUserSpeechDetected: () => {
+          // User started speaking (or is still speaking) — reset the
+          // silence timer so hesitant/slow speakers aren't prematurely nudged.
+          // The timer restarts from scratch each time speech is detected.
+          this.resetSilenceTimerOnSpeech(session);
         },
         onInterrupted: () => {
           this.clearSilenceTimer(session.id);
           callbacks.onInterrupted();
+        },
+        onDisconnected: (reason) => {
+          this.logger.error(
+            `Provider session disconnected unexpectedly (session: ${session.id}): ${reason ?? 'unknown'}`,
+          );
+          this.clearSilenceTimer(session.id);
+          this.nudgedSessions.delete(session.id);
+          this.activeSessions.delete(session.id);
+          callbacks.onSessionError?.(
+            reason ?? 'The interview session was lost. Please try again.',
+          );
         },
       },
     );
@@ -228,6 +246,24 @@ export class InterviewService {
     this.logger.log(`Interview cancelled: ${sessionId}`);
   }
 
+  /**
+   * Called when the client reports that AI audio playback has finished.
+   * This is the correct moment to start the silence timer, because
+   * the user has now fully heard the question.
+   */
+  handlePlaybackComplete(sessionId: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return;
+
+    // Don't start timer if the interview is already over
+    if (session.shouldEndInterview) return;
+
+    this.logger.log(
+      `Client playback complete — starting silence timer (session: ${sessionId})`,
+    );
+    this.startSilenceTimer(session);
+  }
+
   getSession(sessionId: string): InterviewSession | undefined {
     return this.activeSessions.get(sessionId);
   }
@@ -248,6 +284,12 @@ export class InterviewService {
 
     const alreadyNudged = this.nudgedSessions.has(session.id);
 
+    // Use shorter timeout after nudge, longer initial timeout to
+    // give the candidate time to think before their first answer.
+    const timeoutMs = alreadyNudged
+      ? SILENCE_AFTER_NUDGE_TIMEOUT_MS
+      : SILENCE_TIMEOUT_MS;
+
     const timer = setTimeout(() => {
       this.silenceTimers.delete(session.id);
 
@@ -257,7 +299,7 @@ export class InterviewService {
         // Already nudged once — skip to next question.
         // NOT marked as nudge so the response counts as a normal turn.
         this.logger.log(
-          `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — skipping to next question (session: ${session.id})`,
+          `Silence timeout (${timeoutMs / 1000}s after nudge) — skipping to next question (session: ${session.id})`,
         );
         this.nudgedSessions.delete(session.id);
         this.liveProvider.sendText(
@@ -268,7 +310,7 @@ export class InterviewService {
         // First silence — gentle nudge.
         // Marked as nudge so the response does NOT count as a question.
         this.logger.log(
-          `Silence timeout (${SILENCE_TIMEOUT_MS / 1000}s) — nudging Gemini (session: ${session.id})`,
+          `Silence timeout (${timeoutMs / 1000}s) — nudging Gemini (session: ${session.id})`,
         );
         this.liveProvider.sendText(
           session.providerSessionId,
@@ -276,9 +318,24 @@ export class InterviewService {
           true,
         );
       }
-    }, SILENCE_TIMEOUT_MS);
+    }, timeoutMs);
 
     this.silenceTimers.set(session.id, timer);
+  }
+
+  /**
+   * Reset the silence timer when user speech is detected.
+   * This prevents the nudge from firing while the user is actively
+   * speaking (even if hesitantly with pauses).
+   */
+  private resetSilenceTimerOnSpeech(session: InterviewSession): void {
+    // Only reset if there is an active silence timer
+    if (!this.silenceTimers.has(session.id)) return;
+
+    this.logger.debug(
+      `User speech detected — resetting silence timer (session: ${session.id})`,
+    );
+    this.startSilenceTimer(session);
   }
 
   private clearSilenceTimer(sessionId: string): void {

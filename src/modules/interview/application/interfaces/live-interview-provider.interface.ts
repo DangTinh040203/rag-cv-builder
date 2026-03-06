@@ -23,6 +23,11 @@ export interface LiveSessionCallbacks {
   onAudioResponse?: (audioData: Buffer) => void;
   onTurnComplete?: (turnData: TurnCompleteData) => void;
   onInterrupted?: () => void;
+  /** Called when the provider detects user speech (via input transcription).
+   *  Used to reset silence timers — the user is actively speaking. */
+  onUserSpeechDetected?: () => void;
+  /** Called when the provider session closes unexpectedly (after reconnection retries are exhausted) */
+  onDisconnected?: (reason?: string) => void;
 }
 
 export interface ILiveInterviewProvider {
@@ -83,4 +88,6 @@ export interface InterviewCallbacks {
   }) => void;
   onInterrupted: () => void;
   onInterviewComplete: () => void;
+  /** Called when the AI provider session is lost and cannot be recovered */
+  onSessionError?: (message: string) => void;
 }

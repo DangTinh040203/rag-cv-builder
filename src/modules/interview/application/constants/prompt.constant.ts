@@ -187,11 +187,17 @@ export const EVALUATION_SCHEMA: Schema = {
 
 // ─── Silence Timeout ──────────────────────────────────────
 
-/** How long (ms) to wait for user audio before nudging them */
-export const SILENCE_TIMEOUT_MS = 15_000;
+/** How long (ms) to wait for COMPLETE silence before nudging the user.
+ *  This is the initial timeout after the AI finishes a question.
+ *  Set longer (30s) to give the candidate time to think before answering. */
+export const SILENCE_TIMEOUT_MS = 30_000;
+
+/** How long (ms) to wait after a nudge before auto-skipping to the next question.
+ *  Shorter than the initial timeout since the candidate was already reminded. */
+export const SILENCE_AFTER_NUDGE_TIMEOUT_MS = 15_000;
 
 export const SILENCE_NUDGE_MESSAGE =
-  'The candidate has been silent for a while. Gently remind them that you are waiting for their answer. If they seem stuck, offer to rephrase the question or move on to the next one.';
+  'The candidate has been silent for quite a while and has not started speaking at all. Gently ask if they are ready to answer or if they would like you to rephrase the question. Keep it brief and encouraging.';
 
 export const SILENCE_SKIP_MESSAGE =
   'The candidate is still not responding after the reminder. Politely acknowledge that they may need more time for this question, then move on to the next question. Say something like "No worries, let\'s move on to the next question." and ask the next question immediately.';
