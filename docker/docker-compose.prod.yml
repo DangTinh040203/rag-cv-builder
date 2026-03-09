@@ -9,7 +9,6 @@ services:
     env_file: .env
     depends_on:
       - redis
-      - nats
     networks:
       - cv-builder-network
 
@@ -19,14 +18,6 @@ services:
     container_name: cv-builder-redis
     restart: always
     command: redis-server --appendonly yes
-    networks:
-      - cv-builder-network
-
-  # NATS Message Broker
-  nats:
-    image: nats:2-alpine
-    container_name: cv-builder-nats
-    restart: always
     networks:
       - cv-builder-network
 

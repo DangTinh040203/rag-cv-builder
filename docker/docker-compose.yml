@@ -81,20 +81,6 @@ services:
     networks:
       - cv-builder-network
 
-  # NATS Message Broker
-  nats:
-    image: nats:2-alpine
-    container_name: cv-builder-nats
-    restart: unless-stopped
-    ports:
-      - '4222:4222' # Client connections
-      - '8222:8222' # HTTP management
-      - '6222:6222' # Cluster routing
-    command: ['--http_port', '8222', '--jetstream', '--store_dir', '/data']
-    volumes:
-      - ./data/nats:/data
-    networks:
-      - cv-builder-network
 networks:
   cv-builder-network:
     driver: bridge

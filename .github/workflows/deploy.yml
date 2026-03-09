@@ -2,9 +2,9 @@ name: Build and Deploy to GCP VM
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
 
 env:
   PROJECT_ID: project-bd8e23f4-e7fc-43d5-99e
