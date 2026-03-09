@@ -67,8 +67,9 @@ jobs:
           host: ${{ secrets.VM_IP }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: 'docker-compose.prod.yml'
+          source: 'docker/docker-compose.prod.yml'
           target: '~/_work/rag-cv-builder'
+          strip_components: 1
 
       - name: Deploy to VM via SSH
         uses: appleboy/ssh-action@v1.0.3
