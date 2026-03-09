@@ -60,3 +60,4 @@ data
 generated
 .agent
 .env.prod
+deploy_key_v2*
