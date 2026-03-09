@@ -23,14 +23,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy compose file to VM
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VM_IP }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: 'docker-compose.prod.yml'
-          target: '~/_work/rag-cv-builder'
 
       - name: Authenticate to Google Cloud
         id: auth
