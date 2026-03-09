@@ -23,6 +23,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Copy compose file to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: 'docker-compose.prod.yml'
+          target: '~/_work/rag-cv-builder'
+
       - name: Authenticate to Google Cloud
         id: auth
         uses: google-github-actions/auth@v2
@@ -57,12 +66,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/_work/rag-cv-builder
-            
+
             gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
-            
+
             docker compose -f docker-compose.prod.yml pull api
             docker compose -f docker-compose.prod.yml up -d
-            
+
             docker image prune -f
 
             docker image prune -f
