@@ -1,5 +1,6 @@
 import { type JwtPayload } from '@clerk/types';
 import {
+  BadRequestException,
   Injectable,
   type PipeTransform,
   UnauthorizedException,
@@ -22,7 +23,7 @@ export class UserByClerkIdPipe implements PipeTransform {
     const user = await this.userService.findByProviderId(providerId);
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new BadRequestException('User not found');
     }
 
     return user;
