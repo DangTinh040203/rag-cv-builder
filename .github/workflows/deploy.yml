@@ -58,7 +58,7 @@ jobs:
           host: ${{ secrets.VM_IP }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: 'docker/docker-compose.prod.yml'
+          source: 'docker/docker-compose.prod.yml,deployments/nginx.conf'
           target: '~/_work/rag-cv-builder'
           strip_components: 1
 
