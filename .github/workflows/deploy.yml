@@ -57,10 +57,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd ~/_work/rag-cv-builder
-
+            
             gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
-
+            
             docker compose -f docker-compose.prod.yml pull api
             docker compose -f docker-compose.prod.yml up -d
+            
+            docker image prune -f
 
             docker image prune -f
