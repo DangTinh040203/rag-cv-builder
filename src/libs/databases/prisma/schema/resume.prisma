@@ -31,5 +31,6 @@ model ResumeInformation {
   resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
+  @@index([resumeId])
   @@map("Information")
 }

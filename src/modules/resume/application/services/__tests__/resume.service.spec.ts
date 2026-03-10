@@ -11,6 +11,7 @@ describe('ResumeService', () => {
   const mockResumeRepository = {
     update: jest.fn(),
     findById: jest.fn(),
+    findOwner: jest.fn(),
     findByUserId: jest.fn(),
     delete: jest.fn(),
   };
@@ -90,21 +91,23 @@ describe('ResumeService', () => {
 
   describe('update', () => {
     it('should update the resume if authorized', async () => {
-      const mockResume = new Resume({
-        id: 'resume-1',
-        userId: 'user-1',
-      } as any);
       const updatePayload = { title: 'Updated Title' } as any;
 
-      mockResumeRepository.findById.mockResolvedValue(mockResume);
-      mockResumeRepository.update.mockResolvedValue({
-        ...mockResume,
-        ...updatePayload,
+      mockResumeRepository.findOwner.mockResolvedValue({
+        id: 'resume-1',
+        userId: 'user-1',
       });
+      mockResumeRepository.update.mockResolvedValue(
+        new Resume({
+          id: 'resume-1',
+          userId: 'user-1',
+          title: 'Updated Title',
+        } as any),
+      );
 
       const result = await service.update('resume-1', updatePayload, 'user-1');
 
-      expect(mockResumeRepository.findById).toHaveBeenCalledWith('resume-1');
+      expect(mockResumeRepository.findOwner).toHaveBeenCalledWith('resume-1');
       expect(mockResumeRepository.update).toHaveBeenCalledWith(
         'resume-1',
         updatePayload,
@@ -113,13 +116,12 @@ describe('ResumeService', () => {
     });
 
     it('should throw ForbiddenException if unauthorized during update', async () => {
-      const mockResume = new Resume({
-        id: 'resume-1',
-        userId: 'user-2',
-      } as any);
       const updatePayload = { title: 'Updated Title' } as any;
 
-      mockResumeRepository.findById.mockResolvedValue(mockResume);
+      mockResumeRepository.findOwner.mockResolvedValue({
+        id: 'resume-1',
+        userId: 'user-2',
+      });
 
       await expect(
         service.update('resume-1', updatePayload, 'user-1'),
@@ -130,27 +132,23 @@ describe('ResumeService', () => {
 
   describe('delete', () => {
     it('should delete the resume if authorized', async () => {
-      const mockResume = new Resume({
+      mockResumeRepository.findOwner.mockResolvedValue({
         id: 'resume-1',
         userId: 'user-1',
-      } as any);
-
-      mockResumeRepository.findById.mockResolvedValue(mockResume);
+      });
       mockResumeRepository.delete.mockResolvedValue(undefined);
 
       await service.delete('resume-1', 'user-1');
 
-      expect(mockResumeRepository.findById).toHaveBeenCalledWith('resume-1');
+      expect(mockResumeRepository.findOwner).toHaveBeenCalledWith('resume-1');
       expect(mockResumeRepository.delete).toHaveBeenCalledWith('resume-1');
     });
 
     it('should throw ForbiddenException if unauthorized during delete', async () => {
-      const mockResume = new Resume({
+      mockResumeRepository.findOwner.mockResolvedValue({
         id: 'resume-1',
         userId: 'user-2',
-      } as any);
-
-      mockResumeRepository.findById.mockResolvedValue(mockResume);
+      });
 
       await expect(service.delete('resume-1', 'user-1')).rejects.toThrow(
         ForbiddenException,

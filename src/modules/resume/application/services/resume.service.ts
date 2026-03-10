@@ -24,7 +24,7 @@ export class ResumeService {
     payload: UpdateResumeCommand,
     userId: string,
   ): Promise<Resume> {
-    await this.findAndAuthorize(id, userId);
+    await this.authorizeOwner(id, userId);
     return this.resumeRepository.update(id, payload);
   }
 
@@ -37,8 +37,24 @@ export class ResumeService {
   }
 
   async delete(id: string, userId: string): Promise<void> {
-    await this.findAndAuthorize(id, userId);
+    await this.authorizeOwner(id, userId);
     return this.resumeRepository.delete(id);
+  }
+
+  /**
+   * Lightweight ownership check — only selects id + userId.
+   * Use this when you don't need the full resume data (e.g., before update/delete).
+   */
+  private async authorizeOwner(id: string, userId: string): Promise<void> {
+    const owner = await this.resumeRepository.findOwner(id);
+    if (!owner) {
+      throw new NotFoundException(`Resume with id ${id} not found`);
+    }
+    if (owner.userId !== userId) {
+      throw new ForbiddenException(
+        'You do not have permission to access this resume',
+      );
+    }
   }
 
   /**
