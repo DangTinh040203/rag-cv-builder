@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { type PrismaPromise } from '@prisma/client/runtime/client';
 
 import { PrismaService } from '@/libs/databases/prisma.service';
 import {
@@ -91,97 +90,113 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
   }
 
   async update(id: string, payload: UpdateResumeCommand): Promise<Resume> {
-    // Use batched $transaction to send all queries in minimal round-trips.
-    // This is critical because DB latency is ~232ms per round-trip.
-    // Old approach: nested deleteMany+create = ~19 sequential SQL operations = ~4.4s network latency alone.
-    // New approach: batch transaction = all operations sent together.
-    const operations: PrismaPromise<unknown>[] = [
-      // 1. Delete all child records in parallel within the transaction
-      this.prisma.resumeInformation.deleteMany({ where: { resumeId: id } }),
-      this.prisma.education.deleteMany({ where: { resumeId: id } }),
-      this.prisma.workExperience.deleteMany({ where: { resumeId: id } }),
-      this.prisma.project.deleteMany({ where: { resumeId: id } }),
-      this.prisma.skill.deleteMany({ where: { resumeId: id } }),
-      this.prisma.certification.deleteMany({ where: { resumeId: id } }),
-      this.prisma.language.deleteMany({ where: { resumeId: id } }),
+    await this.prisma.$transaction(
+      async (tx) => {
+        await Promise.all([
+          tx.resumeInformation.deleteMany({ where: { resumeId: id } }),
+          tx.education.deleteMany({ where: { resumeId: id } }),
+          tx.workExperience.deleteMany({ where: { resumeId: id } }),
+          tx.project.deleteMany({ where: { resumeId: id } }),
+          tx.skill.deleteMany({ where: { resumeId: id } }),
+          tx.certification.deleteMany({ where: { resumeId: id } }),
+          tx.language.deleteMany({ where: { resumeId: id } }),
+        ]);
 
-      // 2. Update resume scalar fields
-      this.prisma.resume.update({
-        where: { id },
-        data: {
-          title: payload.title,
-          subTitle: payload.subTitle,
-          overview: payload.overview,
-        },
-      }),
-    ];
+        await tx.resume.update({
+          where: { id },
+          data: {
+            title: payload.title,
+            subTitle: payload.subTitle,
+            overview: payload.overview,
+          },
+        });
 
-    // 3. Batch all CREATE operations using createMany (bulk insert)
-    if (payload.information?.length) {
-      operations.push(
-        this.prisma.resumeInformation.createMany({
-          data: payload.information.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.educations?.length) {
-      operations.push(
-        this.prisma.education.createMany({
-          data: payload.educations.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.workExperiences?.length) {
-      operations.push(
-        this.prisma.workExperience.createMany({
-          data: payload.workExperiences.map((item) => ({
-            ...item,
-            resumeId: id,
-          })),
-        }),
-      );
-    }
-    if (payload.projects?.length) {
-      operations.push(
-        this.prisma.project.createMany({
-          data: payload.projects.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.skills?.length) {
-      operations.push(
-        this.prisma.skill.createMany({
-          data: payload.skills.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.certifications?.length) {
-      operations.push(
-        this.prisma.certification.createMany({
-          data: payload.certifications.map((item) => ({
-            ...item,
-            resumeId: id,
-          })),
-        }),
-      );
-    }
-    if (payload.languages?.length) {
-      operations.push(
-        this.prisma.language.createMany({
-          data: payload.languages.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
+        const createOps: Promise<unknown>[] = [];
 
-    // Execute all operations in a single batched transaction
-    await this.prisma.$transaction(operations);
+        if (payload.information?.length) {
+          createOps.push(
+            tx.resumeInformation.createMany({
+              data: payload.information.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.educations?.length) {
+          createOps.push(
+            tx.education.createMany({
+              data: payload.educations.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.workExperiences?.length) {
+          createOps.push(
+            tx.workExperience.createMany({
+              data: payload.workExperiences.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.projects?.length) {
+          createOps.push(
+            tx.project.createMany({
+              data: payload.projects.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.skills?.length) {
+          createOps.push(
+            tx.skill.createMany({
+              data: payload.skills.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.certifications?.length) {
+          createOps.push(
+            tx.certification.createMany({
+              data: payload.certifications.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
+        if (payload.languages?.length) {
+          createOps.push(
+            tx.language.createMany({
+              data: payload.languages.map((item) => ({
+                ...item,
+                resumeId: id,
+              })),
+            }),
+          );
+        }
 
-    // Fetch the updated resume with all relations
-    const resume = await this.prisma.resume.findUniqueOrThrow({
+        if (createOps.length) {
+          await Promise.all(createOps);
+        }
+      },
+      { timeout: 15000 },
+    );
+
+    const updatedResume = await this.prisma.resume.findUniqueOrThrow({
       where: { id },
       include: resumeInclude,
     });
-    return new Resume(resume);
+
+    return new Resume(updatedResume);
   }
 
   async delete(id: string): Promise<void> {
