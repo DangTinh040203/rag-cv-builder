@@ -2,9 +2,11 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
+import { CacheKeys, CacheService } from '@/libs/cache';
 import { type UpdateResumeCommand } from '@/modules/resume/application/commands';
 import {
   type IResumeRepository,
@@ -14,9 +16,12 @@ import { Resume } from '@/modules/resume/domain';
 
 @Injectable()
 export class ResumeService {
+  private readonly logger = new Logger(ResumeService.name);
+
   constructor(
     @Inject(RESUME_REPOSITORY_TOKEN)
     private readonly resumeRepository: IResumeRepository,
+    private readonly cacheService: CacheService,
   ) {}
 
   async update(
@@ -25,7 +30,9 @@ export class ResumeService {
     userId: string,
   ): Promise<Resume> {
     await this.authorizeOwner(id, userId);
-    return this.resumeRepository.update(id, payload);
+    const resume = await this.resumeRepository.update(id, payload);
+    await this.invalidateResumeCache(userId, id);
+    return resume;
   }
 
   async findById(id: string, userId: string): Promise<Resume> {
@@ -33,12 +40,42 @@ export class ResumeService {
   }
 
   async findByUserId(userId: string): Promise<Resume | null> {
-    return this.resumeRepository.findByUserId(userId);
+    const cacheKey = CacheKeys.resume.byUserId(userId);
+    const cached = await this.cacheService.get<Resume | null>(cacheKey);
+
+    if (cached !== undefined) {
+      return cached ? new Resume(cached) : null;
+    }
+
+    this.logger.debug(`Cache MISS for resume by userId: ${userId}`);
+    const resume = await this.resumeRepository.findByUserId(userId);
+
+    if (resume) {
+      await this.cacheService.set(cacheKey, resume);
+    } else {
+      await this.cacheService.set(cacheKey, null, 60 * 1000);
+    }
+
+    return resume;
   }
 
   async delete(id: string, userId: string): Promise<void> {
     await this.authorizeOwner(id, userId);
-    return this.resumeRepository.delete(id);
+    await this.resumeRepository.delete(id);
+    await this.invalidateResumeCache(userId, id);
+  }
+
+  private async invalidateResumeCache(
+    userId: string,
+    resumeId: string,
+  ): Promise<void> {
+    await Promise.all([
+      this.cacheService.del(CacheKeys.resume.byUserId(userId)),
+      this.cacheService.del(CacheKeys.resume.byId(resumeId)),
+    ]);
+    this.logger.debug(
+      `Cache invalidated for resume — userId: ${userId}, resumeId: ${resumeId}`,
+    );
   }
 
   /**
