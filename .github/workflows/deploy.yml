@@ -1,4 +1,4 @@
-name: Build and Deploy to GCP VM
+name: Build and Deploy Backend to GCP VM
 
 on:
   workflow_dispatch:
@@ -52,14 +52,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Copy compose file to VM
+      - name: Copy files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.VM_IP }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: 'docker/docker-compose.prod.yml,deployments/nginx.conf'
-          target: '~/_work/rag-cv-builder'
+          target: '~/_work/rag-cv-builder/be'
           strip_components: 1
 
       - name: Deploy to VM via SSH
@@ -69,7 +69,7 @@ jobs:
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/_work/rag-cv-builder
+            cd ~/_work/rag-cv-builder/be
 
             gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
 
