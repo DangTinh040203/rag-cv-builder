@@ -50,6 +50,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 RUN addgroup --system --gid 1001 nestjs && \
     adduser --system --uid 1001 nestjs
 
+ENV NODE_OPTIONS=--dns-result-order=ipv4first
+
 WORKDIR /app
 
 # Copy only what's needed for production
