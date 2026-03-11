@@ -84,8 +84,7 @@ export class InterviewEvaluationService {
           const meta: string[] = [];
           if (turn.wasNudged) meta.push('Nudged');
           if (turn.wasSkipped) meta.push('Skipped due to silence');
-          const metaSuffix =
-            meta.length > 0 ? ` [${meta.join(', ')}]` : '';
+          const metaSuffix = meta.length > 0 ? ` [${meta.join(', ')}]` : '';
 
           return `${role}: ${turn.content}${metaSuffix}`;
         })
