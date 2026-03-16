@@ -91,12 +91,7 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
   }
 
   async update(id: string, payload: UpdateResumeCommand): Promise<Resume> {
-    // Use batched $transaction to send all queries in minimal round-trips.
-    // This is critical because DB latency is ~232ms per round-trip.
-    // Old approach: nested deleteMany+create = ~19 sequential SQL operations = ~4.4s network latency alone.
-    // New approach: batch transaction = all operations sent together.
     const operations: PrismaPromise<unknown>[] = [
-      // 1. Delete all child records in parallel within the transaction
       this.prisma.resumeInformation.deleteMany({ where: { resumeId: id } }),
       this.prisma.education.deleteMany({ where: { resumeId: id } }),
       this.prisma.workExperience.deleteMany({ where: { resumeId: id } }),
@@ -105,7 +100,6 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
       this.prisma.certification.deleteMany({ where: { resumeId: id } }),
       this.prisma.language.deleteMany({ where: { resumeId: id } }),
 
-      // 2. Update resume scalar fields
       this.prisma.resume.update({
         where: { id },
         data: {
@@ -116,7 +110,6 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
       }),
     ];
 
-    // 3. Batch all CREATE operations using createMany (bulk insert)
     if (payload.information?.length) {
       operations.push(
         this.prisma.resumeInformation.createMany({
