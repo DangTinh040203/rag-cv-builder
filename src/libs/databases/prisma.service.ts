@@ -20,7 +20,13 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
       ssl: isProduction ? { rejectUnauthorized: false } : false,
     });
     const adapter = new PrismaPg(pool);
-    super({ adapter });
+    super({
+      adapter,
+      transactionOptions: {
+        maxWait: 10000, // Max time to acquire a transaction slot (ms)
+        timeout: 15000, // Max transaction execution time (ms)
+      },
+    });
   }
 
   async onModuleInit() {
