@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { type PrismaPromise } from '@prisma/client/runtime/client';
 
 import { PrismaService } from '@/libs/databases/prisma.service';
 import {
@@ -91,83 +90,94 @@ export class PrismaAdapterResumeRepository implements IResumeRepository {
   }
 
   async update(id: string, payload: UpdateResumeCommand): Promise<Resume> {
-    const operations: PrismaPromise<unknown>[] = [
-      this.prisma.resumeInformation.deleteMany({ where: { resumeId: id } }),
-      this.prisma.education.deleteMany({ where: { resumeId: id } }),
-      this.prisma.workExperience.deleteMany({ where: { resumeId: id } }),
-      this.prisma.project.deleteMany({ where: { resumeId: id } }),
-      this.prisma.skill.deleteMany({ where: { resumeId: id } }),
-      this.prisma.certification.deleteMany({ where: { resumeId: id } }),
-      this.prisma.language.deleteMany({ where: { resumeId: id } }),
+    await this.prisma.$transaction(async (tx) => {
+      // Step 1: Delete all existing related data
+      await Promise.all([
+        tx.resumeInformation.deleteMany({ where: { resumeId: id } }),
+        tx.education.deleteMany({ where: { resumeId: id } }),
+        tx.workExperience.deleteMany({ where: { resumeId: id } }),
+        tx.project.deleteMany({ where: { resumeId: id } }),
+        tx.skill.deleteMany({ where: { resumeId: id } }),
+        tx.certification.deleteMany({ where: { resumeId: id } }),
+        tx.language.deleteMany({ where: { resumeId: id } }),
+      ]);
 
-      this.prisma.resume.update({
+      // Step 2: Update resume metadata
+      await tx.resume.update({
         where: { id },
         data: {
           title: payload.title,
           subTitle: payload.subTitle,
           overview: payload.overview,
         },
-      }),
-    ];
+      });
 
-    if (payload.information?.length) {
-      operations.push(
-        this.prisma.resumeInformation.createMany({
-          data: payload.information.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.educations?.length) {
-      operations.push(
-        this.prisma.education.createMany({
-          data: payload.educations.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.workExperiences?.length) {
-      operations.push(
-        this.prisma.workExperience.createMany({
-          data: payload.workExperiences.map((item) => ({
-            ...item,
-            resumeId: id,
-          })),
-        }),
-      );
-    }
-    if (payload.projects?.length) {
-      operations.push(
-        this.prisma.project.createMany({
-          data: payload.projects.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.skills?.length) {
-      operations.push(
-        this.prisma.skill.createMany({
-          data: payload.skills.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
-    if (payload.certifications?.length) {
-      operations.push(
-        this.prisma.certification.createMany({
-          data: payload.certifications.map((item) => ({
-            ...item,
-            resumeId: id,
-          })),
-        }),
-      );
-    }
-    if (payload.languages?.length) {
-      operations.push(
-        this.prisma.language.createMany({
-          data: payload.languages.map((item) => ({ ...item, resumeId: id })),
-        }),
-      );
-    }
+      // Step 3: Re-create related data
+      const creates: Promise<unknown>[] = [];
 
-    // Execute all operations in a single batched transaction
-    await this.prisma.$transaction(operations);
+      if (payload.information?.length) {
+        creates.push(
+          tx.resumeInformation.createMany({
+            data: payload.information.map((item) => ({
+              ...item,
+              resumeId: id,
+            })),
+          }),
+        );
+      }
+      if (payload.educations?.length) {
+        creates.push(
+          tx.education.createMany({
+            data: payload.educations.map((item) => ({ ...item, resumeId: id })),
+          }),
+        );
+      }
+      if (payload.workExperiences?.length) {
+        creates.push(
+          tx.workExperience.createMany({
+            data: payload.workExperiences.map((item) => ({
+              ...item,
+              resumeId: id,
+            })),
+          }),
+        );
+      }
+      if (payload.projects?.length) {
+        creates.push(
+          tx.project.createMany({
+            data: payload.projects.map((item) => ({ ...item, resumeId: id })),
+          }),
+        );
+      }
+      if (payload.skills?.length) {
+        creates.push(
+          tx.skill.createMany({
+            data: payload.skills.map((item) => ({ ...item, resumeId: id })),
+          }),
+        );
+      }
+      if (payload.certifications?.length) {
+        creates.push(
+          tx.certification.createMany({
+            data: payload.certifications.map((item) => ({
+              ...item,
+              resumeId: id,
+            })),
+          }),
+        );
+      }
+      if (payload.languages?.length) {
+        creates.push(
+          tx.language.createMany({
+            data: payload.languages.map((item) => ({ ...item, resumeId: id })),
+          }),
+        );
+      }
+
+      if (creates.length > 0) {
+        await Promise.all(creates);
+      }
+    });
 
     // Fetch the updated resume with all relations
     const resume = await this.prisma.resume.findUniqueOrThrow({
