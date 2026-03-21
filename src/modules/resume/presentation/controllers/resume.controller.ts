@@ -15,11 +15,13 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { CurrentDbUser } from '@/libs/decorators';
 import {
+  EmailGenerationService,
   ResumeMatchingService,
   ResumeParserService,
   ResumeService,
 } from '@/modules/resume/application/services';
 import {
+  GenerateEmailDto,
   MatchResumeDto,
   UpdateResumeDto,
 } from '@/modules/resume/presentation/DTOs';
@@ -32,6 +34,7 @@ export class ResumeController {
     private readonly resumeService: ResumeService,
     private readonly resumeParserService: ResumeParserService,
     private readonly resumeMatchingService: ResumeMatchingService,
+    private readonly emailGenerationService: EmailGenerationService,
   ) {}
 
   @UseInterceptors(FileInterceptor('file'))
@@ -56,6 +59,19 @@ export class ResumeController {
     return this.resumeMatchingService.match(
       payload.resumeId,
       payload.jobDescription,
+      user.id,
+    );
+  }
+
+  @Post('/generate-email')
+  async generateEmail(
+    @Body() payload: GenerateEmailDto,
+    @CurrentDbUser() user: User,
+  ) {
+    return this.emailGenerationService.generateEmail(
+      payload.resumeId,
+      payload.jobDescription,
+      payload.matchContext,
       user.id,
     );
   }
