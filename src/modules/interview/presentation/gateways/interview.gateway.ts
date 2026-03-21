@@ -21,7 +21,7 @@ import { ResumeService } from '@/modules/resume/application/services/resume.serv
 @WebSocketGateway({
   namespace: '/interview',
   cors: {
-    origin: process.env.FRONTEND_ORIGIN ?? '*',
+    origin: process.env.FRONTEND_ORIGIN,
     credentials: true,
   },
 })

@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  FileTypeValidator,
   Get,
   MaxFileSizeValidator,
   Param,
@@ -12,8 +11,10 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 
 import { CurrentDbUser } from '@/libs/decorators';
+import { FileMagicBytesValidator } from '@/libs/pipes/file-magic-bytes.pipe';
 import {
   EmailGenerationService,
   ResumeMatchingService,
@@ -37,22 +38,22 @@ export class ResumeController {
     private readonly emailGenerationService: EmailGenerationService,
   ) {}
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseInterceptors(FileInterceptor('file'))
   @Post('/parse')
   async parse(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 }),
-          new FileTypeValidator({ fileType: 'application/pdf' }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 1024 * 1024 * 5 })],
       }),
+      new FileMagicBytesValidator(['application/pdf']),
     )
     file: Express.Multer.File,
   ) {
     return this.resumeParserService.parse(file);
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @UseInterceptors(FileInterceptor('file'), ParseJdInterceptor)
   @Post('/match')
   async match(@Body() payload: MatchResumeDto, @CurrentDbUser() user: User) {
@@ -63,6 +64,7 @@ export class ResumeController {
     );
   }
 
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('/generate-email')
   async generateEmail(
     @Body() payload: GenerateEmailDto,

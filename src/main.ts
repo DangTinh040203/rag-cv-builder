@@ -33,7 +33,11 @@ class BootstrapApplication {
     this.app.setGlobalPrefix(`${apiPrefix}/v${apiVersion}`);
 
     this.setupMiddleware();
-    this.setupSwagger(this.app);
+
+    // Only expose Swagger in non-production environments
+    if (this.configService.get<string>(Env.NODE_ENV) !== 'production') {
+      this.setupSwagger(this.app);
+    }
 
     await this.app.listen(port);
     Logger.log(
