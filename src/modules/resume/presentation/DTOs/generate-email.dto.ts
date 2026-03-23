@@ -4,7 +4,6 @@ import {
   IsNotEmpty,
   IsNumber,
   IsString,
-  IsUUID,
   ValidateNested,
 } from 'class-validator';
 
@@ -22,9 +21,6 @@ class MatchContextDto {
 }
 
 export class GenerateEmailDto {
-  @IsUUID()
-  resumeId: string;
-
   @IsNotEmpty({ message: 'Please provide a Job Description' })
   @IsString()
   jobDescription: string;

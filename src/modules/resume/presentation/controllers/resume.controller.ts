@@ -65,13 +65,14 @@ export class ResumeController {
   }
 
   @Throttle({ default: { ttl: 60000, limit: 5 } })
-  @Post('/generate-email')
+  @Post('/:id/generate-email')
   async generateEmail(
+    @Param('id') id: string,
     @Body() payload: GenerateEmailDto,
     @CurrentDbUser() user: User,
   ) {
     return this.emailGenerationService.generateEmail(
-      payload.resumeId,
+      id,
       payload.jobDescription,
       payload.matchContext,
       user.id,
