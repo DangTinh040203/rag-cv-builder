@@ -73,6 +73,9 @@ jobs:
 
             gcloud auth configure-docker asia-southeast1-docker.pkg.dev --quiet
 
+            # Clean up old/dangling images before pulling to prevent disk full errors
+            docker image prune -af
+
             docker compose -f docker-compose.prod.yml pull api
             docker compose -f docker-compose.prod.yml up -d --force-recreate
 
